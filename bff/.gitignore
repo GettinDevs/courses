@@ -1,0 +1,4 @@
+# gitignore template default nodejs project
+dist
+node_modules
+yarn-error.log
