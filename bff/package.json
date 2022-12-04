@@ -1,10 +1,10 @@
 {
   "name": "bff",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "./dist/index.js",
   "scripts": {
     "start": "node index.js",
-    "dev": "node --no-warnings=ExperimentalWarning --watch --loader ts-node/esm src/index.ts"
+    "dev": "node --no-warnings=ExperimentalWarning --experimental-specifier-resolution=node --watch --loader ts-node/esm src/index.ts"
   },
   "license": "MIT",
   "type": "module",

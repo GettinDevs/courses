@@ -14,5 +14,13 @@
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "dist",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ],
+      "@/config/*": [
+        "./src/config/*"
+      ],
+    }
   }
 }
