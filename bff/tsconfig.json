@@ -5,22 +5,35 @@
     // Remove if you want ts-node to do typechecking.
     "transpileOnly": true,
     "files": true,
-    "compilerOptions": {
-      // compilerOptions specified here will override those declared below,
-      // but *only* in ts-node.  Useful if you want ts-node and tsc to use
-      // different options with a single tsconfig.json.
-    }
+    "compilerOptions": {}
   },
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "dist",
+    "noImplicitReturns": false,
+    "module": "commonjs",
     "paths": {
       "@/*": [
         "./src/*"
       ],
-      "@/config/*": [
-        "./src/config/*"
+      "@pool": [
+        "./src/db/pool.ts"
       ],
+      "@config": [
+        "./src/config.ts"
+      ],
+      "@utils/*": [
+        "./src/utils/*"
+      ],
+      "@controllers/*": [
+        "./src/controllers/*"
+      ],
+      "@routes/*": [
+        "./src/routes/*"
+      ]
     }
-  }
+  },
+  "include": [
+    "src/**/*.ts"
+  ]
 }
