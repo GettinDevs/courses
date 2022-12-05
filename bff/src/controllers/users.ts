@@ -52,59 +52,115 @@ export const getUserEnrollments = asyncHandler(async (req, res) => {
   const { userId } = req.params
 
   const { rows } = await pool.query(
-    'SELECT * FROM courses.enrollment e LEFT JOIN courses.course c ON e.course_id = c.course_id WHERE e.user_id = $1',
+    `SELECT *
+    FROM courses.enrollment e
+    LEFT JOIN (
+      SELECT *, ARRAY(
+        SELECT
+          json_build_object(
+            'sessionId', s.session_id,
+            'title', s.title,
+            'rank', s.rank,
+            'type', s.session_type,
+            'isMandatory', s.is_mandatory,
+            'user_progress', CASE WHEN sp.is_completed IS NULL THEN NULL ELSE json_build_object(
+              'isCompleted', sp.is_completed,
+              'status', sp.progress_status
+            ) END
+          )
+        FROM courses.session s
+        LEFT JOIN courses.session_progress sp ON s.session_id = sp.session_id AND sp.user_id = $1
+        WHERE s.course_id = c.course_id
+        GROUP BY s.session_id, sp.is_completed, sp.progress_status, s.rank ORDER BY s.rank
+      ) AS sessions FROM courses.course c
+    ) c ON e.course_id = c.course_id
+    WHERE e.user_id = $1`,
     [userId]
   )
 
   res.json(rows)
 })
 
-// export const getCourse = asyncHandler(async (req, res) => {
-//   const { courseId } = req.params
+export const getUserEnrollment = asyncHandler(async (req, res) => {
+  const { userId, enrollmentId } = req.params
 
-//   const { rows: courses } = await pool.query(
-//     'SELECT * FROM courses.course c WHERE c.course_id = $1',
-//     [courseId]
-//   )
-//   const course = courses[0]
+  const { rows: enrollments } = await pool.query(
+    `SELECT *
+    FROM courses.enrollment e
+    LEFT JOIN (
+      SELECT *, ARRAY(
+        SELECT
+          json_build_object(
+            'sessionId', s.session_id,
+            'title', s.title,
+            'rank', s.rank,
+            'type', s.session_type,
+            'isMandatory', s.is_mandatory,
+            'user_progress', CASE WHEN sp.is_completed IS NULL THEN NULL ELSE json_build_object(
+              'isCompleted', sp.is_completed,
+              'status', sp.progress_status
+            ) END
+          )
+        FROM courses.session s
+        LEFT JOIN courses.session_progress sp ON s.session_id = sp.session_id AND sp.user_id = $1
+        WHERE s.course_id = c.course_id
+        GROUP BY s.session_id, sp.is_completed, sp.progress_status, s.rank ORDER BY s.rank
+      ) AS sessions FROM courses.course c
+    ) c ON e.course_id = c.course_id
+    WHERE e.user_id = $1 AND e.enrollment_id = $2`,
+    [userId, enrollmentId]
+  )
 
-//   const { rows: sessions } = await pool.query(
-//     'SELECT * FROM courses.session s WHERE s.course_id = $1',
-//     [courseId]
-//   )
+  const enrollment = enrollments[0]
 
-//   res.json({
-//     ...course,
-//     sessions,
-//   })
-// })
+  res.json(enrollment)
+})
 
 export const getCourse = asyncHandler(async (req, res) => {
   const { courseId } = req.params
 
   const { rows: courses } = await pool.query(
-    // 'SELECT *, ARRAY(SELECT json_agg(s) AS sessions FROM courses.session s WHERE s.course_id = $1 GROUP BY s.rank ORDER BY s.rank) AS sessions FROM courses.course c WHERE c.course_id = $1',
-    `SELECT *, ARRAY(
-      SELECT
-        json_build_object(
-          'sessionId', s.session_id,
-          'title', s.title,
-          'rank', s.rank,
-          'type', s.session_type,
-          'isMandatory', s.is_mandatory,
-          'user_progress', CASE WHEN sp.is_completed IS NULL THEN NULL ELSE json_build_object(
-            'isCompleted', sp.is_completed,
-            'status', sp.progress_status
-          ) END
-        )
-      FROM courses.session s
-      LEFT JOIN courses.session_progress sp ON s.session_id = sp.session_id AND sp.user_id = $2
-      WHERE s.course_id = $1
-      GROUP BY s.session_id, sp.is_completed, sp.progress_status, s.rank ORDER BY s.rank
-    ) AS sessions FROM courses.course c WHERE c.course_id = $1`,
-    [courseId, 3]
+    `SELECT 
+      c.course_id as "courseId",
+      c.title,
+      c.depends_on as "dependsOn",
+      ARRAY(
+        SELECT
+          json_build_object(
+            'sessionId', s.session_id,
+            'title', s.title,
+            'rank', s.rank,
+            'type', s.session_type,
+            'isMandatory', s.is_mandatory
+          )
+        FROM courses.session s
+        WHERE s.course_id = $1
+        GROUP BY s.session_id, s.rank ORDER BY s.rank
+      ) AS sessions
+    FROM courses.course c
+    WHERE c.course_id = $1`,
+    [courseId]
   )
+  const course = courses[0]
 
-  res.json(courses)
+  res.json(course)
 })
 
+export const getSession = asyncHandler(async (req, res) => {
+  const { sessionId } = req.params
+
+  const { rows: sessions } = await pool.query(`
+    SELECT
+      s.session_id as "sessionId",
+      s.title,
+      s.session_type as "type",
+      s.is_mandatory as "isMandatory",
+      s.rank,
+      s.course_id as "courseId",
+      s.content
+    FROM courses.session s WHERE s.session_id = $1
+  `, [sessionId])
+
+  const session = sessions[0]
+  res.json(session)
+})
