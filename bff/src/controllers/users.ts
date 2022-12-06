@@ -52,7 +52,16 @@ export const getUserEnrollments = asyncHandler(async (req, res) => {
   const { userId } = req.params
 
   const { rows } = await pool.query(
-    `SELECT *
+    `SELECT
+      e.enrollment_id as "enrollmentId",
+      e.is_completed as "isCompleted",
+      e.user_id as "userId",
+      json_build_object(
+        'courseId', c.course_id,
+        'title', c.title,
+        'dependsOn', c.depends_on,
+        'sessions', c.sessions
+      ) as course
     FROM courses.enrollment e
     LEFT JOIN (
       SELECT *, ARRAY(
@@ -63,7 +72,7 @@ export const getUserEnrollments = asyncHandler(async (req, res) => {
             'rank', s.rank,
             'type', s.session_type,
             'isMandatory', s.is_mandatory,
-            'user_progress', CASE WHEN sp.is_completed IS NULL THEN NULL ELSE json_build_object(
+            'userProgress', CASE WHEN sp.is_completed IS NULL THEN NULL ELSE json_build_object(
               'isCompleted', sp.is_completed,
               'status', sp.progress_status
             ) END
@@ -96,7 +105,7 @@ export const getUserEnrollment = asyncHandler(async (req, res) => {
             'rank', s.rank,
             'type', s.session_type,
             'isMandatory', s.is_mandatory,
-            'user_progress', CASE WHEN sp.is_completed IS NULL THEN NULL ELSE json_build_object(
+            'userProgress', CASE WHEN sp.is_completed IS NULL THEN NULL ELSE json_build_object(
               'isCompleted', sp.is_completed,
               'status', sp.progress_status
             ) END
