@@ -2,6 +2,8 @@ import { useEffect, useState, useContext, useMemo } from 'react';
 import axios from 'axios';
 import styled, { css } from 'styled-components'
 import { Routes, Route, Outlet, Link, useLocation, useOutletContext, useParams } from 'react-router-dom';
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 import { getSession, getUserEnrollments, login } from '../api/User';
 import { User } from '../definitions/User'
@@ -101,7 +103,7 @@ export function Header() {
 const HeaderStyled = styled.div`
   display: flex;
   align-items: center;
-  height: 30px;
+  min-height: 30px;
   padding: 10px;
   border-bottom: 1px solid #ccc;
   
@@ -453,7 +455,19 @@ const SessionItemStyled = styled(Link) <{ locked: number }>`
   }
 `
 
+const markdown = `A paragraph with *emphasis* and **strong importance**.
 
+> A block quote with ~strikethrough~ and a URL: https://reactjs.org.
+
+* Lists
+* [ ] todo
+* [x] done
+
+A table:
+
+| a | b |
+| - | - |
+`
 
 export function SessionOverviewPage() {
   const { addLocation, popLocation } = useContext(LocationContext);
@@ -488,7 +502,8 @@ export function SessionOverviewPage() {
   return (
     <SessionOverviewContainer>
       <BackButton to={`/courses/${enrollment.enrollmentId}`}>Return to course sessions</BackButton>
-      <div>{session.content}</div>
+      {/* <div>{session.content}</div> */}
+      <ReactMarkdown children={markdown} remarkPlugins={[remarkGfm]} />
     </SessionOverviewContainer>
   )
 }
