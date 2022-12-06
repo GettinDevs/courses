@@ -1,5 +1,4 @@
 import { useEffect, useState, useContext, useMemo } from 'react';
-import axios from 'axios';
 import styled, { css } from 'styled-components'
 import { Routes, Route, Outlet, Link, useLocation, useOutletContext, useParams } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown'
@@ -9,8 +8,6 @@ import { getSession, getUserEnrollments, login } from '../api/User';
 import { User } from '../definitions/User'
 import { UserContext } from '../contexts/UserContext';
 import { LocationContext } from '../contexts/LocationContext';
-
-axios.defaults.baseURL = 'http://localhost:8000/api';
 
 export function App() {
   const { user, setUser } = useContext(UserContext);

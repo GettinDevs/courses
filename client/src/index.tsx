@@ -8,6 +8,7 @@ import {
 
 import './index.css';
 import { App } from './pages/App';
+import { Dashboard } from './pages/Dashboard';
 import { UserProvider } from './contexts/UserContext';
 import { LocationProvider } from './contexts/LocationContext';
 
@@ -18,6 +19,11 @@ const router = createBrowserRouter([
     path: "/*",
     element: <App />,
     errorElement: <div>404</div>,
+  },
+  {
+    path: "/dashboard",
+    element: <Dashboard />,
+    errorElement: <div>404</div>
   },
 ]);
 

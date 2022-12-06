@@ -1,4 +1,4 @@
-// import { pool } from '@/db/pool'
+import type { Request, Response } from 'express';
 import { pool } from '@pool';
 import { asyncHandler } from '@/utils/asyncHandlers'
 import { config } from '@config'
@@ -172,4 +172,146 @@ export const getSession = asyncHandler(async (req, res) => {
 
   const session = sessions[0]
   res.json(session)
+})
+
+export const getCourses = asyncHandler(async (_req, res) => {
+
+  // Fetch all courses without populating
+  // the sessions array
+  const { rows: courses } = await pool.query(`
+    SELECT
+      c.course_id as "courseId",
+      c.title,
+      c.depends_on as "dependsOn"
+    FROM courses.course c
+  `)
+
+  // Fetch all sessions
+  const { rows: sessions } = await pool.query(`
+    SELECT
+      s.session_id as "sessionId",
+      s.title,
+      s.session_type as "type",
+      s.is_mandatory as "isMandatory",
+      s.rank,
+      s.course_id as "courseId",
+      s.content
+    FROM courses.session s
+  `)
+
+  const coursesWithSessions = courses.map(course => {
+    const courseSessions = sessions
+      .filter(session => session.courseId === course.courseId)
+      .sort((a, b) => a.rank - b.rank)
+
+    return {
+      ...course,
+      sessions: courseSessions
+    }
+  })
+
+  const sessionsWithoutCourse = sessions.find(session => {
+    return !coursesWithSessions.find(course => course.courseId === session.courseId)
+  }) || []
+
+  res.json({
+    courses: coursesWithSessions,
+    sessionsWithoutCourse
+  })
+})
+
+
+export function authMiddleware(req: Request, res: Response) {
+  const { username, password } = req.body
+
+  if (username !== ADMIN_USER && password !== ADMIN_PASSWORD) {
+    res.status(401).json({
+      message: 'Unauthorized role',
+    })
+  }
+}
+
+export const addCourse = asyncHandler(async (req, res) => {
+  authMiddleware(req, res)
+
+  const { title, dependsOn } = req.body
+
+  const { rows } = await pool.query(
+    `INSERT INTO courses.course (title, depends_on) VALUES ($1, $2) RETURNING course_id as "courseId"`,
+    [title, dependsOn]
+  )
+
+  res.json(rows[0])
+})
+
+export const addSession = asyncHandler(async (req, res) => {
+  authMiddleware(req, res)
+
+  const { courseId, title, type, isMandatory, rank, content } = req.body
+
+  const { rows } = await pool.query(
+    `INSERT INTO courses.session (course_id, title, session_type, is_mandatory, rank, content) VALUES ($1, $2, $3, $4, $5, $6) RETURNING session_id as "sessionId"`,
+    [courseId, title, type, isMandatory, rank, content]
+  )
+
+  res.json(rows[0])
+})
+
+export const updateCourse = asyncHandler(async (req, res) => {
+  authMiddleware(req, res)
+
+  const { courseId } = req.params
+  const { title, dependsOn } = req.body
+
+  await pool.query(
+    `UPDATE courses.course SET title = $1, depends_on = $2 WHERE course_id = $3`,
+    [title, dependsOn, courseId]
+  )
+
+  res.json({ message: 'Course updated' })
+})
+
+export const updateSession = asyncHandler(async (req, res) => {
+  authMiddleware(req, res)
+
+  const { sessionId } = req.params
+  const { title, type, isMandatory, rank, content } = req.body
+
+  await pool.query(
+    `UPDATE courses.session SET title = $1, session_type = $2, is_mandatory = $3, rank = $4, content = $5 WHERE session_id = $6`,
+    [title, type, isMandatory, rank, content, sessionId]
+  )
+
+  res.json({ message: 'Session updated' })
+})
+
+export const deleteCourse = asyncHandler(async (req, res) => {
+  authMiddleware(req, res)
+
+  const { courseId } = req.params
+
+  await pool.query(
+    `UPDATE courses.course SET depends_on = NULL WHERE depends_on = $1`,
+    [courseId]
+  )
+
+  await pool.query(
+    `DELETE FROM courses.course WHERE course_id = $1`,
+    [courseId]
+  )
+
+  res.json({ message: 'Course deleted' })
+})
+
+export const deleteSession = asyncHandler(async (req, res) => {
+  authMiddleware(req, res)
+
+  const { sessionId } = req.params
+
+  await pool.query(
+    `DELETE FROM courses.session WHERE session_id = $1`,
+    [sessionId]
+  )
+
+  res.json({ message: 'Session deleted' })
 })

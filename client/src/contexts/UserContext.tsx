@@ -10,26 +10,26 @@ type ContextProps = {
 
 export const UserContext = createContext<ContextProps>({} as ContextProps);
 
-export const UserProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+function getLocalUser(): User | null {
+  const user = localStorage.getItem('user');
+  if (!user) return null;
 
-  useEffect(() => {
-    const user = localStorage.getItem('user');
-    if (!user) return;
-
-    try {
-      const userParsed = JSON.parse(user);
-      const userBuilder = {
-        userId: parseInt(userParsed.userId),
-        username: userParsed.username,
-        role: ['USER', 'ADMIN'].includes(userParsed.role) ? userParsed.role : 'USER'
-      }
-      setUser(userBuilder);
-    } catch (error) {
-      console.error(error);
-      setUser(null)
+  try {
+    const userParsed = JSON.parse(user);
+    const userBuilder = {
+      userId: parseInt(userParsed.userId),
+      username: userParsed.username,
+      role: ['USER', 'ADMIN'].includes(userParsed.role) ? userParsed.role : 'USER'
     }
-  }, []);
+    return userBuilder;
+  } catch (error) {
+    console.error(error);
+    return null
+  }
+}
+
+export const UserProvider = ({ children }: { children: React.ReactNode }) => {
+  const [user, setUser] = useState<User | null>(getLocalUser());
 
   function logout() {
     setUser(null);

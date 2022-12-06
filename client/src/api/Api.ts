@@ -14,4 +14,6 @@ function errorHandler(error: AxiosError) {
 }
 
 export const post = (url: string, data?: any) => axios.post(url, data).then(responseHandler).catch(errorHandler)
+export const put = (url: string, data?: any) => axios.put(url, data).then(responseHandler).catch(errorHandler)
 export const get = (url: string) => axios.get(url).then(responseHandler).catch(errorHandler)
+export const del = (url: string) => axios.delete(url).then(responseHandler).catch(errorHandler)
