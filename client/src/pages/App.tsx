@@ -290,6 +290,23 @@ export function EnrollmentsWrapper() {
 export function EnrollmentsPage() {
   const { enrollments } = useOutletContext<OutletContextType>();
 
+  function calculateBorder(index: number, sessions: SessionWithUserProgress[]) {
+    if (index === 0) return { borderBottomLeftRadius: '5px' }
+    if (index === sessions.length - 1) return { borderBottomRightRadius: '5px' }
+    return {};
+  }
+
+  function calculateColor(session: SessionWithUserProgress) {
+    const colors = ({
+      [SessionProgressStatus.IN_PROGRESS]: 'orange',
+      [SessionProgressStatus.NOT_STARTED]: 'lightgray',
+      [SessionProgressStatus.COMPLETED]: 'green',
+      [SessionProgressStatus.WAITING_APPROVAL]: 'blue',
+    })
+    const progress = session.userProgress ? session.userProgress.status : SessionProgressStatus.NOT_STARTED;
+    return { backgroundColor: colors[progress] };
+  }
+
   return (
     <EnrollmentsContainer>
       {enrollments?.map(enrollment => (
@@ -302,6 +319,18 @@ export function EnrollmentsPage() {
           <div className="title">{enrollment.course.title}</div>
           <div className="tags">
             <div className="tag">{enrollment.statusTag}</div>
+          </div>
+          <div className="progress-container">
+            {enrollment.course.sessions.map((session, index) => (
+              <div key={session.sessionId} className="progress-item-container">
+                <div className="progress-item" style={{
+                  ...calculateBorder(index, enrollment.course.sessions),
+                  ...calculateColor(session)
+                }}
+                ></div>
+                <div className="progress-item-title">{session.title}</div>
+              </div>
+            ))}
           </div>
         </EnrollmentStyled>
       ))}
@@ -317,13 +346,14 @@ const EnrollmentsContainer = styled.div`
 
 const EnrollmentStyled = styled(Link) <{ locked: number }>`
   margin-bottom: 20px;
-  padding: 10px;
+  padding: 10px 10px 15px; // 5px extra bottom for progress bar
   border: none;
   border-radius: 5px;
   text-decoration: none;
   color: black;
   display: flex;
   justify-content: space-between;
+  position: relative;
 
   ${({ locked }) => locked
     ? css`
@@ -352,6 +382,40 @@ const EnrollmentStyled = styled(Link) <{ locked: number }>`
     padding: 5px;
     background-color: #f7c15f;
     border-radius: 5px;
+  }
+
+  .progress-container {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    width: 100%;
+
+    .progress-item-container {
+      padding-top: 20px;
+      flex: 1;
+
+      :hover {
+        .progress-item-title {
+          display: block;
+        }
+      }
+
+      .progress-item-title {
+        position: absolute;
+        display: none;
+        font-size: 0.8rem;
+        top: 100%;
+        padding-left: 5px;
+      }
+      .progress-item {
+        width: 100%;
+        height: 4px;
+        box-sizing: border-box;
+        border: 1px solid black;
+        background-color: lightgreen;
+      }
+    }
   }
 `
 
