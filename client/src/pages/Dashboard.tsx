@@ -3,13 +3,13 @@ import styled, { css } from 'styled-components'
 import { Routes, Route, Outlet, Link, useLocation, useOutletContext, useParams, Navigate, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import MarkdownEditor from '@uiw/react-markdown-editor';
 
 import { getSession, getUserEnrollments, login } from '../api/User';
 import { addCourse, addSession, deleteCourseById, deleteSessionById, getCourses, updateCourseById, updateSessionById } from '../api/Courses'
 import { UserContext } from '../contexts/UserContext';
 import { LocationContext } from '../contexts/LocationContext';
 import { CourseWithSessions, SessionWithContent, CourseWithSessionsMeta, SessionWithCount, Course, Session } from '../definitions/Course';
-import { type } from 'os';
 
 export function Dashboard() {
   const { user } = useContext(UserContext);
@@ -263,6 +263,7 @@ export function SessionOverview({ session: sessionInit }: SessionOverviewProps) 
       <Input label="type" value={session.type} type="text" onSave={updateSession} />
       <Input label="isMandatory" value={session.isMandatory} type="boolean" onSave={updateSession} />
       <Input label="rank" value={session.rank} type="number" onSave={updateSession} />
+      <Input label="content" value={session.content} type="markdown" onSave={updateSession} />
       <button onClick={handleSave}>Save</button>
       {session.sessionId && <button onClick={handleDelete}>Delete</button>}
     </div>
@@ -286,7 +287,7 @@ function Label({ label, value }: LabelProps) {
 type InputProps = {
   label: string;
   value: string | number | boolean | null;
-  type: 'text' | 'number' | 'boolean';
+  type: 'text' | 'number' | 'boolean' | 'markdown';
   allowNull?: boolean;
   onSave: (label: string, newValue: unknown) => void;
 }
@@ -300,7 +301,8 @@ export function Input({ label, value, type, allowNull, onSave }: InputProps) {
   const defaultValues = {
     text: '',
     number: 0,
-    boolean: false
+    boolean: false,
+    markdown: ''
   }
 
   function handleSave() {
@@ -331,16 +333,17 @@ export function Input({ label, value, type, allowNull, onSave }: InputProps) {
           type === 'boolean' ? <input type="checkbox" checked={Boolean(inputValue)} onChange={(e) => setInputValue(Boolean(e.target.checked))} /> :
             type === 'number' ? <input type="number" value={Number(inputValue)} onChange={(e) => setInputValue(Number(e.target.value))} /> :
               type === 'text' ? <input type="text" value={String(inputValue)} onChange={(e) => setInputValue(String(e.target.value))} /> :
-                <span>Unknown type</span>
+                type === 'markdown' ? <MarkdownEditor style={{ minHeight: '500px' }} value={String(inputValue)} onChange={(newValue, _viewUpdate) => setInputValue(newValue)} /> :
+                  <span>Unknown type</span>
         }
         {
-          allowNull && <button style={{ marginLeft: '12px' }} onClick={() => setInputValue(null)}>set null</button>
+          allowNull && <button style={{ marginLeft: '12px', height: 'min-content' }} onClick={() => setInputValue(null)}>set null</button>
         }
-        <button style={{ marginLeft: '12px' }} onClick={() => {
+        <button style={{ marginLeft: '12px', height: 'min-content' }} onClick={() => {
           setInputValue(value)
           setEditMode(false)
         }}>cancel</button>
-        <button style={{ marginLeft: '12px' }} onClick={handleSave}>save</button>
+        <button style={{ marginLeft: '12px', height: 'min-content' }} onClick={handleSave}>save</button>
       </LabelStyled>
     )
   }
