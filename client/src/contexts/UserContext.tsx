@@ -19,7 +19,8 @@ function getLocalUser(): User | null {
     const userBuilder = {
       userId: parseInt(userParsed.userId),
       username: userParsed.username,
-      role: ['USER', 'ADMIN'].includes(userParsed.role) ? userParsed.role : 'USER'
+      role: ['USER', 'ADMIN'].includes(userParsed.role) ? userParsed.role : 'USER',
+      password: userParsed.password || undefined,
     }
     return userBuilder;
   } catch (error) {

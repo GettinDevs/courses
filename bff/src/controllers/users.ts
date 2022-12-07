@@ -221,14 +221,15 @@ export const getCourses = asyncHandler(async (_req, res) => {
 })
 
 
-export function authMiddleware(req: Request, res: Response) {
-  const { username, password } = req.body
+export function authMiddleware(_req: Request, _res: Response) {
+  return;
+  // const { username, password } = req.body
 
-  if (username !== ADMIN_USER && password !== ADMIN_PASSWORD) {
-    res.status(401).json({
-      message: 'Unauthorized role',
-    })
-  }
+  // if (username !== ADMIN_USER && password !== ADMIN_PASSWORD) {
+  //   res.status(401).json({
+  //     message: 'Unauthorized role',
+  //   })
+  // }
 }
 
 export const addCourse = asyncHandler(async (req, res) => {

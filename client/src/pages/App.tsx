@@ -53,7 +53,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
     if (usernameParsed === ADMIN_USER && !passwordParsed) return
 
     const user = await login(usernameParsed, passwordParsed);
-    onLogin(user);
+    onLogin({ ...user, password: passwordParsed });
   }
 
   return (
@@ -460,7 +460,7 @@ export function CourseOverviewPage() {
           state={{ session }}
           locked={index !== 0 && (!enrollment.course.sessions[index - 1].userProgress?.isCompleted || !enrollment.course.sessions[index - 1].isMandatory) ? 1 : 0}
         >
-          <div className="title"><b>{session.type === 'LECTURE' ? lecturesCount++ : session.type.toUpperCase()}: </b>{session.title}</div>
+          <div className="title"><b>{session.type === 'LECTURE' ? lecturesCount++ : session.type.toUpperCase()}:&nbsp;</b>{session.title}</div>
           <div className="tags">
             <div className="tag">{session.userProgress?.status.toLowerCase().replace('_', ' ') || 'not started'}</div>
           </div>

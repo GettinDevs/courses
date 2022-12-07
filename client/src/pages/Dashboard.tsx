@@ -1,14 +1,15 @@
-import { useEffect, useState, useContext, useMemo } from 'react';
+import React, { useEffect, useState, useContext, useMemo, FunctionComponent, Component } from 'react';
 import styled, { css } from 'styled-components'
-import { Routes, Route, Outlet, Link, useLocation, useOutletContext, useParams, Navigate, redirect } from 'react-router-dom';
+import { Routes, Route, Outlet, Link, useLocation, useOutletContext, useParams, Navigate, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
 import { getSession, getUserEnrollments, login } from '../api/User';
-import { getCourses } from '../api/Courses'
+import { addCourse, addSession, deleteCourseById, deleteSessionById, getCourses, updateCourseById, updateSessionById } from '../api/Courses'
 import { UserContext } from '../contexts/UserContext';
 import { LocationContext } from '../contexts/LocationContext';
-import { CourseWithSessions, SessionWithContent, CourseWithSessionsMeta, SessionWithCount } from '../definitions/Course';
+import { CourseWithSessions, SessionWithContent, CourseWithSessionsMeta, SessionWithCount, Course, Session } from '../definitions/Course';
+import { type } from 'os';
 
 export function Dashboard() {
   const { user } = useContext(UserContext);
@@ -19,9 +20,11 @@ export function Dashboard() {
   const [activeCourseId, setActiveCourseId] = useState<number | null>(null);
   const [activeSessionId, setActiveSessionId] = useState<number | null>(null);
 
+  const navigate = useNavigate();
+
   useEffect(() => {
     if (!user || user.role !== 'ADMIN') {
-      redirect('/')
+      navigate('/')
       return
     }
 
@@ -59,11 +62,12 @@ export function Dashboard() {
         {
           courses.map((course) => (
             <div key={course.courseId} onClick={() => setActiveCourseId(course.courseId)}>
-              <SidebarItemStyled onClick={() => setActiveSessionId(null)}>{course.title}</SidebarItemStyled>
+              <SidebarItemStyled onClick={() => setActiveSessionId(null)}>[{course.courseId}] {course.title}</SidebarItemStyled>
               <div style={{ paddingLeft: '30px' }}>
                 {
                   course.sessions.map((session) => (
                     <SidebarItemStyled key={session.sessionId} onClick={() => setActiveSessionId(session.sessionId)}>
+                      <span>[{session.sessionId}]&nbsp;</span>
                       <b>{session.type === 'LECTURE' ? session.count : session.type.toUpperCase()}:&nbsp;</b>
                       {session.title}
                     </SidebarItemStyled>
@@ -110,10 +114,10 @@ export function Dashboard() {
           )
         }
         {
-          activeCourseId !== null && activeSessionId === null && <CourseOverview course={activeCourseId === -1 ? null : courses.find(c => c.courseId === activeCourseId)} />
+          activeCourseId !== null && activeSessionId === null && <CourseOverview key={activeCourseId} course={activeCourseId === -1 ? null : courses.find(c => c.courseId === activeCourseId)} />
         }
         {
-          activeCourseId !== null && activeSessionId !== null && <SessionOverview session={activeSessionId === -1 ? null : courses.find(c => c.courseId === activeCourseId)?.sessions.find(s => s.sessionId === activeSessionId)} />
+          activeCourseId !== null && activeSessionId !== null && <SessionOverview key={activeSessionId} session={activeSessionId === -1 ? null : courses.find(c => c.courseId === activeCourseId)?.sessions.find(s => s.sessionId === activeSessionId)} />
         }
       </div>
     </ContainerStyled>
@@ -172,35 +176,185 @@ const SidebarItemStyled = styled.div`
 type CourseOverviewProps = {
   course?: CourseWithSessions | null,
 }
-export function CourseOverview({ course }: CourseOverviewProps) {
+export function CourseOverview({ course: courseInit }: CourseOverviewProps) {
+  const defaultCourse = {
+    title: '',
+    dependsOn: null,
+  } as Course
+  const [course, setCourse] = useState(courseInit || defaultCourse)
 
-  if (!course) return (
-    <div>
-      <h1>New course</h1>
-    </div>
-  )
+  function updateCourse(label: string, value: unknown) {
+    setCourse({
+      ...course,
+      [label]: value
+    })
+  }
+
+  async function handleSave() {
+    if (course.courseId) {
+      await updateCourseById(course.courseId, course)
+    } else {
+      await addCourse(course)
+    }
+  }
+
+  async function handleDelete() {
+    if (course.courseId) {
+      await deleteCourseById(course.courseId)
+    }
+  }
 
   return (
     <div>
-      <h1>{course.title}</h1>
+      <Label label="courseId" value={course.courseId} />
+      <Input label="title" value={course.title} type="text" onSave={updateCourse} />
+      <Input label="dependsOn" value={course.dependsOn} type="number" allowNull onSave={updateCourse} />
+      <button onClick={handleSave}>Save</button>
+      {course.courseId && <button onClick={handleDelete}>Delete</button>}
     </div>
   )
 }
 
 type SessionOverviewProps = {
-  session?: SessionWithCount | null,
+  session?: SessionWithContent | null,
 }
-export function SessionOverview({ session }: SessionOverviewProps) {
+export function SessionOverview({ session: sessionInit }: SessionOverviewProps) {
+  const defaultSession = {
+    title: '',
+    content: '',
+    courseId: -1,
+    isMandatory: false,
+    rank: -1,
+    type: 'LECTURE',
+    sessionId: null
+  } as SessionWithContent & { sessionId: null }
+  const [session, setSession] = useState(sessionInit || defaultSession)
 
-  if (!session) return (
-    <div>
-      <h1>New session</h1>
-    </div>
-  )
+  function updateSession(label: string, value: unknown) {
+    setSession({
+      ...session,
+      [label]: value
+    })
+  }
+
+  async function handleSave() {
+    if (session.courseId === null) {
+      alert('Please select a course')
+      return
+    }
+    if (session.sessionId) {
+      await updateSessionById(session.sessionId, session)
+    } else {
+      await addSession(session)
+    }
+  }
+
+  async function handleDelete() {
+    if (session.sessionId) {
+      await deleteSessionById(session.sessionId)
+    }
+  }
 
   return (
     <div>
-      <h1>{session.title}</h1>
+      <Label label="sessionId" value={session.sessionId} />
+      <Input label="title" value={session.title} type="text" onSave={updateSession} />
+      <Input label="courseId" value={session.courseId} type="number" onSave={updateSession} />
+      <Input label="type" value={session.type} type="text" onSave={updateSession} />
+      <Input label="isMandatory" value={session.isMandatory} type="boolean" onSave={updateSession} />
+      <Input label="rank" value={session.rank} type="number" onSave={updateSession} />
+      <button onClick={handleSave}>Save</button>
+      {session.sessionId && <button onClick={handleDelete}>Delete</button>}
     </div>
   )
 }
+
+
+type LabelProps = {
+  label: string;
+  value: string | number | boolean | null;
+}
+function Label({ label, value }: LabelProps) {
+  return (
+    <div>
+      <span>{label}: </span>
+      <span>{String(value)}</span>
+    </div>
+  )
+}
+
+type InputProps = {
+  label: string;
+  value: string | number | boolean | null;
+  type: 'text' | 'number' | 'boolean';
+  allowNull?: boolean;
+  onSave: (label: string, newValue: unknown) => void;
+}
+
+export function Input({ label, value, type, allowNull, onSave }: InputProps) {
+  const [inputValue, setInputValue] = useState(value);
+  const [editMode, setEditMode] = useState(false);
+
+  if (typeof value === null && !allowNull) throw new Error('Input value cannot be null');
+
+  const defaultValues = {
+    text: '',
+    number: 0,
+    boolean: false
+  }
+
+  function handleSave() {
+    onSave(label, inputValue);
+    setEditMode(false);
+  }
+
+  if (editMode) {
+    if (inputValue === null) {
+      return (
+        <LabelStyled>
+          <span>{label}:&nbsp;</span>
+          <span>null</span>
+          <button style={{ marginLeft: '12px' }} onClick={() => setInputValue(defaultValues[type])}>set value</button>
+          <button style={{ marginLeft: '12px' }} onClick={() => {
+            setInputValue(value)
+            setEditMode(false)
+          }}>cancel</button>
+          <button style={{ marginLeft: '12px' }} onClick={handleSave}>save</button>
+        </LabelStyled>
+      )
+    }
+
+    return (
+      <LabelStyled>
+        <span>{label}:&nbsp;</span>
+        {
+          type === 'boolean' ? <input type="checkbox" checked={Boolean(inputValue)} onChange={(e) => setInputValue(Boolean(e.target.checked))} /> :
+            type === 'number' ? <input type="number" value={Number(inputValue)} onChange={(e) => setInputValue(Number(e.target.value))} /> :
+              type === 'text' ? <input type="text" value={String(inputValue)} onChange={(e) => setInputValue(String(e.target.value))} /> :
+                <span>Unknown type</span>
+        }
+        {
+          allowNull && <button style={{ marginLeft: '12px' }} onClick={() => setInputValue(null)}>set null</button>
+        }
+        <button style={{ marginLeft: '12px' }} onClick={() => {
+          setInputValue(value)
+          setEditMode(false)
+        }}>cancel</button>
+        <button style={{ marginLeft: '12px' }} onClick={handleSave}>save</button>
+      </LabelStyled>
+    )
+  }
+
+  return (
+    <LabelStyled onClick={() => setEditMode(true)}>
+      <span>{label}:&nbsp;</span>
+      <span>{String(inputValue)}</span>
+    </LabelStyled>
+  )
+}
+
+const LabelStyled = styled.div`
+  display: flex;
+  font-size: 1.2rem;
+  padding: 8px 0;  
+`

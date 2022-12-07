@@ -10,6 +10,7 @@ export type Session = {
   rank: number;
   title: string;
   type: SessionType;
+  courseId: number;
 }
 
 export type SessionWithContent = Session & {
