@@ -11,27 +11,7 @@
     "rootDir": "src",
     "outDir": "dist",
     "noImplicitReturns": false,
-    "module": "commonjs",
-    "paths": {
-      "@/*": [
-        "./src/*"
-      ],
-      "@pool": [
-        "./src/db/pool.ts"
-      ],
-      "@config": [
-        "./src/config.ts"
-      ],
-      "@utils/*": [
-        "./src/utils/*"
-      ],
-      "@controllers/*": [
-        "./src/controllers/*"
-      ],
-      "@routes/*": [
-        "./src/routes/*"
-      ]
-    }
+    "module": "commonjs"
   },
   "include": [
     "src/**/*.ts"

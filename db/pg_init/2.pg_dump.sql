@@ -1,3 +1,6 @@
+\c postgres;
+SET search_path TO courses;
+
 INSERT INTO app_user(username, user_role) VALUES ('tomas', 'ADMIN');
 INSERT INTO app_user(username) VALUES ('willi');
 INSERT INTO app_user(username) VALUES ('tiago');

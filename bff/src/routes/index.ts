@@ -1,6 +1,6 @@
 import express from 'express'
 
-import * as controller from '@controllers/users'
+import * as controller from '../controllers/users'
 
 const routes = express.Router()
 

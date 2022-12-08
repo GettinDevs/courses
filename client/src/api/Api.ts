@@ -1,6 +1,6 @@
 import axios, { AxiosResponse, AxiosError } from 'axios';
 
-axios.defaults.baseURL = 'http://localhost:8000/api';
+axios.defaults.baseURL = process.env.REACT_APP_BASE_URL;
 axios.defaults.timeout = 5000;
 
 function responseHandler(response: AxiosResponse) {

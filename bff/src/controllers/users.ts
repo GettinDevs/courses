@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
-import { pool } from '@pool';
-import { asyncHandler } from '@/utils/asyncHandlers'
-import { config } from '@config'
+import { pool } from '../db/pool';
+import { asyncHandler } from '../utils/asyncHandlers'
+import { config } from '../config'
 
 const ADMIN_USER = 'tomas'
 const ADMIN_PASSWORD = config.app.adminPassword
