@@ -10,7 +10,7 @@ function responseHandler(response: AxiosResponse) {
 
 function errorHandler(error: AxiosError) {
   console.error(error)
-  return Promise.reject(error);
+  return Promise.reject(error.response?.data);
 }
 
 export const post = (url: string, data?: any) => axios.post(url, data).then(responseHandler).catch(errorHandler)

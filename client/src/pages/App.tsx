@@ -44,16 +44,26 @@ export function LoginPage({ onLogin }: LoginPageProps) {
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   async function handleLogin() {
-    const usernameParsed = username.trim().toLowerCase();
-    const passwordParsed = password.trim();
+    try {
+      const usernameParsed = username.trim().toLowerCase();
+      const passwordParsed = password.trim();
 
-    if (!usernameParsed) return;
-    if (usernameParsed === ADMIN_USER && !passwordParsed) return
+      if (!usernameParsed) return;
+      if (usernameParsed === ADMIN_USER && !passwordParsed) return
 
-    const user = await login(usernameParsed, passwordParsed);
-    onLogin({ ...user, password: passwordParsed });
+      setIsLoading(true);
+      setError(null);
+      const user = await login(usernameParsed, passwordParsed);
+      onLogin({ ...user, password: passwordParsed });
+    } catch (e) {
+      setError((e as any).message);
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -72,6 +82,16 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       <div>
         <button onClick={handleLogin}>Login</button>
       </div>
+      {isLoading && (
+        <div>
+          <span>Checking...</span>
+        </div>
+      )}
+      {error && (
+        <div>
+          <span>{error}</span>
+        </div>
+      )}
     </div>
   )
 }
@@ -516,20 +536,6 @@ const SessionItemStyled = styled(Link) <{ locked: number }>`
   }
 `
 
-const markdown = `A paragraph with *emphasis* and **strong importance**.
-
-> A block quote with ~strikethrough~ and a URL: https://reactjs.org.
-
-* Lists
-* [ ] todo
-* [x] done
-
-A table:
-
-| a | b |
-| - | - |
-`
-
 export function SessionOverviewPage() {
   const { addLocation, popLocation } = useContext(LocationContext);
   const { enrollment } = useOutletContext<OutletCourseContextType>();
@@ -564,7 +570,7 @@ export function SessionOverviewPage() {
     <SessionOverviewContainer>
       <BackButton to={`/courses/${enrollment.enrollmentId}`}>Return to course sessions</BackButton>
       {/* <div>{session.content}</div> */}
-      <ReactMarkdown children={markdown} remarkPlugins={[remarkGfm]} />
+      <ReactMarkdown children={session.content} remarkPlugins={[remarkGfm]} />
     </SessionOverviewContainer>
   )
 }
