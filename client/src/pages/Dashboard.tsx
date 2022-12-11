@@ -65,9 +65,10 @@ export function Dashboard() {
               <SidebarItemStyled onClick={() => setActiveSessionId(null)}>[{course.courseId}] {course.title}</SidebarItemStyled>
               <div style={{ paddingLeft: '30px' }}>
                 {
-                  course.sessions.map((session) => (
+                  course.sessions.map((session, index) => (
                     <SidebarItemStyled key={session.sessionId} onClick={() => setActiveSessionId(session.sessionId)}>
                       <span>[{session.sessionId}]&nbsp;</span>
+                      <span>[{index}]&nbsp;</span>
                       <b>{session.type === 'LECTURE' ? session.count : session.type.toUpperCase()}:&nbsp;</b>
                       {session.title}
                     </SidebarItemStyled>
