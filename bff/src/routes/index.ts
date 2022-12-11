@@ -15,6 +15,8 @@ routes.get('/users/:userId/enrollments/:enrollmentId', controller.getUserEnrollm
 routes.get('/courses', controller.getCourses)
 routes.get('/courses/:courseId', controller.getCourse)
 routes.get('/sessions/:sessionId', controller.getSession)
+routes.post('/sessions/:sessionId/complete', controller.completeSession)
+routes.post('/sessions/:sessionId/uncomplete', controller.uncompleteSession)
 
 // Admin routes
 routes.post('/courses', controller.addCourse)

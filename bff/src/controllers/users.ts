@@ -316,3 +316,27 @@ export const deleteSession = asyncHandler(async (req, res) => {
 
   res.json({ message: 'Session deleted' })
 })
+
+export const completeSession = asyncHandler(async (req, res) => {
+  const { sessionId } = req.params
+  const { userId } = req.body
+
+  await pool.query(
+    `UPDATE courses.session_progress SET is_completed = true, progress_status = 'COMPLETED' WHERE session_id = $1 AND user_id = $2`,
+    [sessionId, userId]
+  )
+
+  res.json({ message: 'Session completed' })
+})
+
+export const uncompleteSession = asyncHandler(async (req, res) => {
+  const { sessionId } = req.params
+  const { userId } = req.body
+
+  await pool.query(
+    `UPDATE courses.session_progress SET is_completed = false, progress_status = 'NOT_STARTED' WHERE session_id = $1 AND user_id = $2`,
+    [sessionId, userId]
+  )
+
+  res.json({ message: 'Session uncompleted' })
+})

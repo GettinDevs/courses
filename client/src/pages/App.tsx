@@ -1,4 +1,4 @@
-import { useEffect, useState, useContext, useMemo } from 'react';
+import { useEffect, useState, useContext, useMemo, Fragment } from 'react';
 import styled, { css } from 'styled-components'
 import { Routes, Route, Outlet, Link, useLocation, useOutletContext, useParams } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown'
@@ -8,6 +8,7 @@ import { getSession, getUserEnrollments, login } from '../api/User';
 import { User } from '../definitions/User'
 import { UserContext } from '../contexts/UserContext';
 import { LocationContext } from '../contexts/LocationContext';
+import { completeSession, uncompleteSession } from '../api/Courses';
 
 export function App() {
   const { user, setUser } = useContext(UserContext);
@@ -102,9 +103,17 @@ export function Header() {
 
   return (
     <HeaderStyled>
-      <div className="path-container">
+      {/* <div className="path-container">
         <span>{locations.at(-2)}</span>
         <span>{locations.length > 1 ? ' > ' : ''}{locations.at(-1)}</span>
+      </div> */}
+      <div className="path-container">
+        {locations.map((location, index) => (
+          <Fragment key={location}>
+            {index !== 0 && <b>{' > '}</b>}
+            <span>{location}</span>
+          </Fragment>
+        ))}
       </div>
       {user && (
         <div className="user-container">
@@ -231,7 +240,7 @@ export type SessionWithUserProgress = Session & {
   userProgress: {
     isCompleted: boolean;
     status: SessionProgressStatus
-  } | null
+  }
 }
 
 export type Enrollment = {
@@ -541,13 +550,9 @@ export function SessionOverviewPage() {
   const { enrollment } = useOutletContext<OutletCourseContextType>();
   const { sessionId } = useParams();
   const [loading, setLoading] = useState(true);
-  const [session, setSession] = useState<SessionWithContent | null>(null);
-
-  async function fetchSessionContent(sessionId: number) {
-    const response = await getSession(sessionId)
-    setSession(response);
-    setLoading(false);
-  }
+  const [loadingStatus, setLoadingStatus] = useState(false);
+  const [session, setSession] = useState<SessionWithUserProgress | null>(null);
+  const [content, setContent] = useState('')
 
   useEffect(() => {
     const session = enrollment.course.sessions.find(session => session.sessionId === Number(sessionId));
@@ -557,6 +562,7 @@ export function SessionOverviewPage() {
     };
 
     addLocation(session.title);
+    setSession(session);
     fetchSessionContent(Number(sessionId));
 
     return () => {
@@ -564,13 +570,71 @@ export function SessionOverviewPage() {
     }
   }, [])
 
+  async function fetchSessionContent(sessionId: number) {
+    const res = await getSession(sessionId) as SessionWithContent
+    setContent(res.content)
+    setLoading(false);
+  }
+
+  function handleStatus(id: number, toComplete: boolean) {
+    if (!session) {
+      console.warn('Invalid session');
+      return;
+    }
+
+    setLoadingStatus(true)
+
+    const newSession: SessionWithUserProgress = {
+      ...session,
+      userProgress: {
+        ...session.userProgress
+      }
+    }
+
+    if (toComplete) {
+      newSession.userProgress.isCompleted = true;
+      newSession.userProgress.status = SessionProgressStatus.COMPLETED
+      completeSession(id).then(() => {
+        setSession(newSession)
+        setLoadingStatus(false)
+      })
+    } else {
+      newSession.userProgress.isCompleted = false;
+      newSession.userProgress.status = SessionProgressStatus.IN_PROGRESS
+      uncompleteSession(id).then(() => {
+        setSession(newSession)
+        setLoadingStatus(false)
+      })
+    }
+  }
+
+  function isLastSession() {
+    return true
+    // const lastSessionId = enrollment.course.sessions.reverse().find(s => s.userProgress?.status === SessionProgressStatus.IN_PROGRESS)?.sessionId
+    // return session?.sessionId === lastSessionId
+  }
+
   if (loading || !session) return <></>;
 
   return (
     <SessionOverviewContainer>
-      <BackButton to={`/courses/${enrollment.enrollmentId}`}>Return to course sessions</BackButton>
-      {/* <div>{session.content}</div> */}
-      <ReactMarkdown children={session.content} remarkPlugins={[remarkGfm]} />
+      <div className="actions">
+        <BackButton to={`/courses/${enrollment.enrollmentId}`}>Return to course sessions</BackButton>
+        {
+          isLastSession() && (
+            <>
+              {
+                loadingStatus
+                  ? <button disabled>Loading...</button>
+                  : session.userProgress?.isCompleted
+                    ? <button onClick={() => handleStatus(session.sessionId, false)}>Uncomplete</button>
+                    : <button onClick={() => handleStatus(session.sessionId, true)}>Complete</button>
+              }
+            </>
+          )
+        }
+      </div>
+      <ReactMarkdown children={content} remarkPlugins={[remarkGfm]} />
     </SessionOverviewContainer>
   )
 }
@@ -579,6 +643,11 @@ const SessionOverviewContainer = styled.div`
   display: flex;
   flex-direction: column;
   padding: 20px;
+
+  .actions {
+    display: flex;
+    justify-content: space-between;
+  }
 `
 
 const BackButton = styled(Link)`
