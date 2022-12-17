@@ -487,7 +487,8 @@ export function CourseOverviewPage() {
           key={session.sessionId}
           to={`sessions/${session.sessionId}`}
           state={{ session }}
-          locked={index !== 0 && (!enrollment.course.sessions[index - 1].userProgress?.isCompleted || !enrollment.course.sessions[index - 1].isMandatory) ? 1 : 0}
+          // locked={index !== 0 && (!enrollment.course.sessions[index - 1].userProgress?.isCompleted || !enrollment.course.sessions[index - 1].isMandatory) ? 1 : 0}
+          locked={0}
         >
           <div className="title"><b>{session.type === 'LECTURE' ? lecturesCount++ : session.type.toUpperCase()}:&nbsp;</b>{session.title}</div>
           <div className="tags">
@@ -634,7 +635,7 @@ export function SessionOverviewPage() {
           )
         }
       </div>
-      <ReactMarkdown children={content} remarkPlugins={[remarkGfm]} />
+      <ReactMarkdown className='md' children={content} remarkPlugins={[remarkGfm]} />
     </SessionOverviewContainer>
   )
 }
@@ -647,6 +648,12 @@ const SessionOverviewContainer = styled.div`
   .actions {
     display: flex;
     justify-content: space-between;
+  }
+
+  .md {
+    pre {
+      background-color: lightgrey;
+    }
   }
 `
 
