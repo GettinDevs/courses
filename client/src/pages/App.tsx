@@ -651,7 +651,7 @@ const SessionOverviewContainer = styled.div`
   }
 
   .md {
-    pre {
+    pre, code {
       background-color: lightgrey;
     }
   }
