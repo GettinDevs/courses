@@ -147,6 +147,7 @@ export function SideBar() {
   return (
     <SideBarStyled>
       <Link className='item' to="/">My Enrollments</Link>
+      <Link className='item' to="/activities">Activities</Link>
     </SideBarStyled>
   )
 }
@@ -176,12 +177,6 @@ const SideBarStyled = styled.div`
 `
 
 export function MainLayout({ children }: { children: React.ReactNode }) {
-  const { addLocation } = useContext(LocationContext);
-
-  useEffect(() => {
-    addLocation('My Enrollments');
-  }, []);
-
   return (
     <MainLayoutStyled>
       <Header />
@@ -197,7 +192,6 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
 
 const MainLayoutStyled = styled.div`
   height: 100vh;
-  width: 100wh;
   display: flex;
   flex-direction: column;
 
@@ -292,6 +286,7 @@ function getEnrollmentsStatusTag(enrollments: Enrollment[]): EnrollmentWithStatu
 type OutletContextType = { enrollments: EnrollmentWithStatusTag[] };
 
 export function EnrollmentsWrapper() {
+  const { addLocation } = useContext(LocationContext);
   const { user } = useContext(UserContext);
   const [enrollments, setEnrollments] = useState<EnrollmentWithStatusTag[]>([]);
   const [loading, setLoading] = useState(true);
@@ -305,6 +300,7 @@ export function EnrollmentsWrapper() {
   }
 
   useEffect(() => {
+    addLocation('My Enrollments', true);
     fetchEnrollments();
   }, [])
 
