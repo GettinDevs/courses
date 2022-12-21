@@ -26,4 +26,9 @@ routes.put('/sessions/:sessionId', controller.updateSession)
 routes.delete('/courses/:courseId', controller.deleteCourse)
 routes.delete('/sessions/:sessionId', controller.deleteSession)
 
+// Activities routes
+routes.get('/activities', controller.getActivities)
+routes.post('/activities', controller.addActivity)
+routes.put('/activities/:activityId', controller.editActivity)
+
 export { routes }

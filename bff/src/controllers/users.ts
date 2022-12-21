@@ -340,3 +340,53 @@ export const uncompleteSession = asyncHandler(async (req, res) => {
 
   res.json({ message: 'Session uncompleted' })
 })
+
+
+type ActivityProps = {
+  description: string;
+  params: string[];
+  tests: [any[], any][];
+}
+
+export const addActivity = asyncHandler(async (req, res) => {
+  const { description, params, tests }: ActivityProps = req.body
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS courses.activity (
+      activity_id SERIAL PRIMARY KEY,
+      description TEXT NOT NULL,
+      params TEXT[] NOT NULL,
+      tests JSONB NOT NULL
+    );
+  `)
+
+  const { rows } = await pool.query(`
+    INSERT INTO courses.activity (description, params, tests) VALUES ($1, $2, $3) RETURNING activity_id as "activityId";
+  `, [description, params, JSON.stringify(tests).replaceAll('[', '{').replaceAll(']', '}')])
+
+  res.json({ message: 'Activity added', activityId: rows[0].activityId })
+})
+
+export const getActivities = asyncHandler(async (_req, res) => {
+  const { rows } = await pool.query(`
+    SELECT
+      a.activity_id as "activityId",
+      a.description,
+      a.params,
+      a.tests
+    FROM courses.activity a;
+  `)
+
+  res.json(rows)
+})
+
+export const editActivity = asyncHandler(async (req, res) => {
+  const { activityId } = req.params
+  const { description, params, tests }: ActivityProps = req.body
+
+  await pool.query(`
+    UPDATE courses.activity SET description = $1, params = $2, tests = $3 WHERE activity_id = $4;
+  `, [description, params, tests, activityId])
+
+  res.json({ message: 'Activity edited' })
+})

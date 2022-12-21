@@ -1,9 +1,8 @@
 import React, { useContext, useEffect, useState } from 'react'
 import styled from 'styled-components'
-import { Routes, Route, Outlet, Link, useLocation, useOutletContext, useParams } from 'react-router-dom';
-import CodeMirror from '@uiw/react-codemirror';
-import { javascript } from '@codemirror/lang-javascript';
-import { LocationContext } from '../contexts/LocationContext';
+import CodeMirror from '@uiw/react-codemirror'
+import { javascript } from '@codemirror/lang-javascript'
+import { LocationContext } from '../contexts/LocationContext'
 
 const DEFAULT_FN = `\
 function task(#PARAMS) {
@@ -11,29 +10,15 @@ function task(#PARAMS) {
 }
 `
 
-const DEFAULT_TESTS: [any[], any][] = [
-  [[100, 2], 200],
-  [[5, 5], 25],
-  [[{
-    name: 'tomas',
-    age: 20,
-    kids: []
-  }], {
-    name: 'tomas',
-    age: 99,
-    kids: false
-  }],
-  [[0, 10], 0]
-]
-
-function createTask(code: string, params: string[]): {
-  valid: true;
-  fn: Function;
+function createTask (code: string, params: string[]): {
+  valid: true
+  fn: Function
 } | {
-  valid: false;
-  error: unknown;
+  valid: false
+  error: unknown
 } {
   try {
+    // eslint-disable-next-line no-new-func, @typescript-eslint/no-implied-eval
     const fn = new Function('args', `
       try {
         ${code}
@@ -71,35 +56,41 @@ function createTask(code: string, params: string[]): {
   }
 }
 
-export function Activities() {
-  const { addLocation, popLocation } = useContext(LocationContext);
+export function Activities (): JSX.Element {
+  const { addLocation, popLocation } = useContext(LocationContext)
   const [activities, setActivities] = useState<ActivityProps[]>([])
   const [selectedActivityIdx, setSelectedActivityIdx] = useState<number | null>(null)
 
   useEffect(() => {
+    // getActivit`ies().then(res => {
+    //   setActivities(res)
+    // })`
     setActivities([
       {
-        id: 1, title: 'first', description: 'do so',
-        params: ['firstValue', 'multiplier'],
+        id: 1,
+        description: 'do so',
+        params: ['firstValue', 'secondValue'],
         tests: [
-          [[5, 2], 10],
-          [[2, 25], 50]
+          [[0, 20], 0],
+          [[2, 30], 60],
+          [[5, 100], 500]
         ]
       },
       {
-        id: 2, title: 'second', description: 'do so by two lolo',
+        id: 2,
+        description: 'do so by two lolo',
         params: ['firstValue', 'multiplier', 'exclusive'],
         tests: [
           [[{ age: 23 }, 100], { age: 123 }],
-          [[{ age: 51 }, 120], { age: 171 }],
+          [[{ age: 51 }, 120], { age: 171 }]
         ]
       }
     ])
 
-    addLocation('Activities', true);
+    addLocation('Activities', true)
   }, [])
 
-  function onSelectActivity(index: number) {
+  function onSelectActivity (index: number): void {
     if (selectedActivityIdx !== null) {
       popLocation()
     }
@@ -130,7 +121,7 @@ export function Activities() {
               <span style={{ display: 'flex', justifyContent: 'center', paddingTop: 200 }}>
                 Please, select an activity from the list on the sidebar.
               </span>
-            )
+              )
             : <Activity key={selectedActivityIdx} {...activities[selectedActivityIdx]} />
         }
       </div>
@@ -171,14 +162,13 @@ const ContainerStyled = styled.div`
   }
 `
 
-type ActivityProps = {
-  id: number;
-  title: string;
-  description: string;
-  params: string[];
-  tests: [any[], any][];
+interface ActivityProps {
+  id: number
+  description: string
+  params: string[]
+  tests: Array<[any[], any]>
 }
-export function Activity({ description, params, tests }: ActivityProps) {
+export function Activity ({ description, params, tests }: ActivityProps): JSX.Element {
   const [code, setCode] = useState(DEFAULT_FN.replace('#PARAMS', params.join(', ')))
   const [results, setResults] = useState<any[]>(Array(tests.length).fill(undefined))
   const [error, setError] = useState<string | null>(null)
@@ -186,11 +176,11 @@ export function Activity({ description, params, tests }: ActivityProps) {
   const [selectedTestIdx, setSelectedTestIdx] = useState(0)
   const [output, setOutput] = useState<string | null>(null)
 
-  function onChange(value: string) {
+  function onChange (value: string): void {
     setCode(value)
   }
 
-  function getFn() {
+  function getFn (): Function | null {
     setResults([])
     setError(null)
     setOutput(null)
@@ -204,16 +194,16 @@ export function Activity({ description, params, tests }: ActivityProps) {
     return task.fn
   }
 
-  function onRunCode() {
+  function onRunCode (): void {
     const fn = getFn()
     if (fn === null) return
 
     const executedTask = fn(tests[selectedTestIdx][0]) as {
-      success: true;
-      value: any;
+      success: true
+      value: any
     } | {
-      success: false;
-      message: string;
+      success: false
+      message: string
     }
 
     if (executedTask.success) {
@@ -224,18 +214,18 @@ export function Activity({ description, params, tests }: ActivityProps) {
     }
   }
 
-  function onRunTests() {
+  function onRunTests () {
     const fn = getFn()
     if (fn === null) return
 
     tests.forEach(test => {
       const testInput = test[0]
       const executedTask = fn(testInput) as {
-        success: true;
-        value: any;
+        success: true
+        value: any
       } | {
-        success: false;
-        message: string;
+        success: false
+        message: string
       }
 
       if (executedTask.success) {
@@ -265,12 +255,12 @@ export function Activity({ description, params, tests }: ActivityProps) {
           <button onClick={() => setShowTests(v => !v)}>{showTests ? 'Hide tests' : 'Show tests'}</button>
         </div>
         <span style={{ paddingTop: '1rem', fontWeight: 'bold' }}>Output from running the code:</span>
-        {output && (
+        {output !== null && (
           <pre>
             {JSON.stringify(output, undefined, 2)}
           </pre>
         )}
-        {error && (
+        {error !== null && (
           <div style={{ color: 'red', fontWeight: 'bold' }}>
             <pre>{error}</pre>
           </div>
@@ -280,10 +270,12 @@ export function Activity({ description, params, tests }: ActivityProps) {
         <table>
           <thead>
             <tr>
-              <th>Input</th>
-              <th>Expected Output</th>
-              <th>Received Output</th>
-              <th>Success</th>
+
+                           <th>Input</th>
+                <th>Expected Output</th>
+
+                  <th>Received Output</th>
+                  <th>Success</th>
             </tr>
           </thead>
           <tbody>
@@ -315,8 +307,9 @@ export function Activity({ description, params, tests }: ActivityProps) {
           </tbody>
         </table>
       </div>
-    </ActivitiesOverviewContainer>
-  );
+
+          </ActivitiesOverviewContainer>
+  )
 }
 
 const ActivitiesOverviewContainer = styled.div`
