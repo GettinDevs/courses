@@ -349,16 +349,6 @@ type ActivityProps = {
   tests: [any[], any][];
 };
 
-type ActivityPosgres = {
-  activityId: number;
-  description: string;
-  params: string[];
-  tests: {
-    args: any[];
-    expected: any;
-  }[];
-};
-
 export const addActivity = asyncHandler(async (req, res) => {
   const { description, params, tests }: ActivityProps = req.body;
   // const testsForDB: ActivityPosgres["tests"] = tests.map(
@@ -418,4 +408,17 @@ export const editActivity = asyncHandler(async (req, res) => {
   );
 
   res.json({ message: "Activity edited" });
+});
+
+export const deleteActivity = asyncHandler(async (req, res) => {
+  const { activityId } = req.params;
+
+  await pool.query(
+    `
+    DELETE FROM courses.activity WHERE activity_id = $1;
+  `,
+    [activityId]
+  );
+
+  res.json({ message: "Activity deleted" });
 });

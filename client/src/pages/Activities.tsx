@@ -3,6 +3,8 @@ import styled from "styled-components";
 import CodeMirror from "@uiw/react-codemirror";
 import { javascript } from "@codemirror/lang-javascript";
 import { LocationContext } from "../contexts/LocationContext";
+import { getActivities, updateActivity } from "../api/Activities";
+import { Route, Routes } from "react-router-dom";
 
 const DEFAULT_FN = `\
 function task(#PARAMS) {
@@ -75,30 +77,9 @@ export function Activities(): JSX.Element {
   );
 
   useEffect(() => {
-    // getActivit`ies().then(res => {
-    //   setActivities(res)
-    // })`
-    setActivities([
-      {
-        id: 1,
-        description: "do so",
-        params: ["firstValue", "secondValue"],
-        tests: [
-          [[0, 20], 0],
-          [[2, 30], 60],
-          [[5, 100], 500],
-        ],
-      },
-      {
-        id: 2,
-        description: "do so by two lolo",
-        params: ["firstValue", "multiplier", "exclusive"],
-        tests: [
-          [[{ age: 23 }, 100], { age: 123 }],
-          [[{ age: 51 }, 120], { age: 171 }],
-        ],
-      },
-    ]);
+    getActivities().then((res) => {
+      setActivities(res);
+    });
 
     addLocation("Activities", true);
   }, []);
@@ -141,10 +122,26 @@ export function Activities(): JSX.Element {
             Please, select an activity from the list on the sidebar.
           </span>
         ) : (
-          <Activity
-            key={selectedActivityIdx}
-            {...activities[selectedActivityIdx]}
-          />
+          <Routes>
+            <Route
+              index
+              element={
+                <Activity
+                  key={selectedActivityIdx}
+                  {...activities[selectedActivityIdx]}
+                />
+              }
+            />
+            <Route
+              path="edit"
+              element={
+                <EditActivity
+                  key={selectedActivityIdx}
+                  {...activities[selectedActivityIdx]}
+                />
+              }
+            />
+          </Routes>
         )}
       </div>
     </ContainerStyled>
@@ -184,8 +181,212 @@ const ContainerStyled = styled.div`
   }
 `;
 
+export function EditActivity(activity: ActivityProps): JSX.Element {
+  const [description, setDescription] = useState(activity.description);
+  const [params, setParams] = useState<string[]>(activity.params);
+  const [paramsEdit, setParamsEdit] = useState(activity.params.join(", "));
+  const [args, setArgs] = useState(
+    activity.tests.map((t) =>
+      t[0].reduce(
+        (args, arg, paramIdx) => ({
+          ...args,
+          [activity.params[paramIdx]]: JSON.stringify(arg, null, 2),
+        }),
+        {}
+      )
+    )
+  );
+  const [outputs, setOutputs] = useState(
+    activity.tests.map((t) => JSON.stringify(t[1], null, 2))
+  );
+  const [newArg, setNewArg] = useState<{ [key: string]: string }>(
+    params.reduce((a, p) => ({ ...a, [p]: "" }), {})
+  );
+  const [newOutput, setNewOutput] = useState("");
+
+  useEffect(() => {
+    console.log({ params, args });
+  }, [params, args]);
+
+  function updateArgs(index: number, paramName: string, value: string): void {
+    const newArgs = args.map((a) => ({ ...a }));
+    newArgs[index][paramName] = value;
+    setArgs(newArgs);
+  }
+
+  function updateOutputs(index: number, value: string): void {
+    const newOutputs = [...outputs];
+    newOutputs[index] = value;
+    setOutputs(newOutputs);
+  }
+
+  function addTest() {
+    setArgs([...args, newArg]);
+    setOutputs([...outputs, newOutput]);
+    setNewArg(params.reduce((a, p) => ({ ...a, [p]: "" }), {}));
+    setNewOutput("");
+  }
+
+  function handleDeleteActivity() {}
+
+  function handleSaveActivity() {
+    const newTests = args.map((arg, index) => [
+      params.map((param) => JSON.parse(arg[param] || "null")),
+      JSON.parse(outputs[index] || "null"),
+    ]) as [any[], any][];
+
+    updateActivity({
+      activityId: activity.activityId,
+      description,
+      params,
+      tests: newTests,
+    }).then((res) => {
+      alert("Activity updated successfully!");
+    });
+  }
+
+  return (
+    <EditActivityContainerStyled>
+      <div>
+        <h1>Activity {activity.activityId}</h1>
+        <div style={{ display: "flex", marginBottom: 16 }}>
+          <button onClick={handleDeleteActivity}>Delete</button>
+          <button onClick={handleSaveActivity}>Save</button>
+        </div>
+        <div style={{ display: "flex", marginBottom: 16 }}>
+          <span>Description:</span>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            style={{ height: 100, width: 400 }}
+          />
+        </div>
+        <div style={{ display: "flex", marginBottom: 16 }}>
+          <span>
+            Params: <b>{params.join(", ")}</b>
+          </span>
+        </div>
+        <div style={{ display: "flex", marginBottom: 16 }}>
+          <span>Edit Params:</span>
+          <input
+            value={paramsEdit}
+            onChange={(e) => setParamsEdit(e.target.value)}
+          />
+          <button onClick={() => setParamsEdit(args.join(", "))}>Cancel</button>
+          <button
+            onClick={() =>
+              setParams(paramsEdit.split(",").map((p) => p.trim()))
+            }
+          >
+            Save
+          </button>
+        </div>
+      </div>
+      <div className="tests-container">
+        <table>
+          <thead>
+            <tr>
+              <th colSpan={params.length}>Arguments</th>
+            </tr>
+            <tr>
+              {params.map((param) => (
+                <th key={param}>{param}</th>
+              ))}
+              <th rowSpan={1}>Expected Output</th>
+            </tr>
+          </thead>
+          <tbody>
+            {args.map((_, testIdx) => (
+              <tr key={testIdx}>
+                {params.map((param) => (
+                  <td key={param}>
+                    <CodeMirror
+                      value={args[testIdx][param]}
+                      theme="dark"
+                      style={{ fontSize: "1rem" }}
+                      basicSetup={{
+                        lineNumbers: false,
+                      }}
+                      extensions={[javascript()]}
+                      onChange={(edit) => updateArgs(testIdx, param, edit)}
+                    />
+                  </td>
+                ))}
+                <td>
+                  <CodeMirror
+                    value={outputs[testIdx]}
+                    theme="dark"
+                    style={{ fontSize: "1rem" }}
+                    basicSetup={{
+                      lineNumbers: false,
+                    }}
+                    extensions={[javascript()]}
+                    onChange={(edit) => updateOutputs(testIdx, edit)}
+                  />
+                </td>
+              </tr>
+            ))}
+            <tr>
+              {params.map((param) => (
+                <td key={param}>
+                  <CodeMirror
+                    value={newArg[param]}
+                    theme="dark"
+                    style={{ fontSize: "1rem" }}
+                    basicSetup={{
+                      lineNumbers: false,
+                    }}
+                    extensions={[javascript()]}
+                    onChange={(edit) => setNewArg({ ...newArg, [param]: edit })}
+                  />
+                </td>
+              ))}
+              <td>
+                <CodeMirror
+                  value={newOutput}
+                  theme="dark"
+                  style={{ fontSize: "1rem" }}
+                  basicSetup={{
+                    lineNumbers: false,
+                  }}
+                  extensions={[javascript()]}
+                  onChange={(edit) => setNewOutput(edit)}
+                />
+              </td>
+              <td>
+                <button onClick={addTest}>Add</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </EditActivityContainerStyled>
+  );
+}
+
+const EditActivityContainerStyled = styled.div`
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+
+  .tests-container {
+    flex: 3;
+    padding-left: 20px;
+
+    th,
+    td {
+      border: 1px solid;
+    }
+
+    th,
+    td {
+      padding: 0 8px;
+    }
+  }
+`;
+
 interface ActivityProps {
-  id: number;
+  activityId: number;
   description: string;
   params: string[];
   tests: Array<[any[], any]>;
@@ -306,37 +507,32 @@ export function Activity({
         <table>
           <thead>
             <tr>
-              <th>Input</th>
-              <th>Expected Output</th>
-
-              <th>Received Output</th>
-              <th>Success</th>
+              <th
+                colSpan={params.length}
+                style={{ backgroundColor: "lightgray" }}
+              >
+                Input (arguments)
+              </th>
+            </tr>
+            <tr>
+              {params.map((param) => (
+                <th key={param} style={{ backgroundColor: "lightgray" }}>
+                  {param}
+                </th>
+              ))}
+              <th rowSpan={1}>Expected Output</th>
+              <th rowSpan={1}>Received Output</th>
+              <th rowSpan={1}>Success</th>
             </tr>
           </thead>
           <tbody>
             {tests.map((test, index) => (
-              <tr key={index} onClick={() => setSelectedTestIdx(index)}>
-                <td>
-                  <table>
-                    <tbody>
-                      {test[0].map((testItem, idx) => (
-                        <tr
-                          key={idx}
-                          style={
-                            selectedTestIdx === index
-                              ? { color: "darkorange", fontWeight: "bold" }
-                              : {}
-                          }
-                        >
-                          <td>{params[idx]}</td>
-                          <td>
-                            <pre>{JSON.stringify(testItem, undefined, 2)}</pre>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </td>
+              <tr key={index}>
+                {test[0].map((testItem, idx) => (
+                  <td key={idx} style={{ backgroundColor: "lightgray" }}>
+                    <pre>{JSON.stringify(testItem, undefined, 2)}</pre>
+                  </td>
+                ))}
                 <td>
                   <pre>{JSON.stringify(test[1], undefined, 2)}</pre>
                 </td>
@@ -395,6 +591,10 @@ const ActivitiesOverviewContainer = styled.div`
   .tests-container {
     flex: 3;
     padding-left: 20px;
+
+    table {
+      border-collapse: collapse;
+    }
 
     table,
     th,
