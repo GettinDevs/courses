@@ -1,4 +1,4 @@
-import { post, get } from "./Api";
+import { post, get, put, del } from "./Api";
 
 type ActivityProps = {
   activityId?: number;
@@ -11,4 +11,6 @@ export const getActivities = () => get("/activities");
 export const addActivity = (activity: ActivityProps) =>
   post("/activities", activity);
 export const updateActivity = (activity: ActivityProps) =>
-  post("/activities", activity);
+  put("/activities/" + activity.activityId, activity);
+export const deleteActivity = (activityId: number) =>
+  del("/activities/" + activityId);

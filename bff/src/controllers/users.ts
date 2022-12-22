@@ -358,11 +358,6 @@ export const addActivity = asyncHandler(async (req, res) => {
   // pass "tests" to json
   const testsJSON = JSON.stringify(tests);
 
-  // delete activity table in DB posgres
-  await pool.query(`
-    DROP TABLE IF EXISTS courses.activity;
-  `);
-
   // Create activity table in DB posgres
   await pool.query(`
     CREATE TABLE IF NOT EXISTS courses.activity (

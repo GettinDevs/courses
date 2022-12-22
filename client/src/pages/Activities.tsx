@@ -3,8 +3,14 @@ import styled from "styled-components";
 import CodeMirror from "@uiw/react-codemirror";
 import { javascript } from "@codemirror/lang-javascript";
 import { LocationContext } from "../contexts/LocationContext";
-import { getActivities, updateActivity } from "../api/Activities";
-import { Route, Routes } from "react-router-dom";
+import { UserContext } from "../contexts/UserContext";
+import {
+  addActivity,
+  deleteActivity,
+  getActivities,
+  updateActivity,
+} from "../api/Activities";
+import { Link, Route, Routes, useLocation } from "react-router-dom";
 
 const DEFAULT_FN = `\
 function task(#PARAMS) {
@@ -70,6 +76,8 @@ function createTask(
 }
 
 export function Activities(): JSX.Element {
+  const location = useLocation();
+  const { user } = useContext(UserContext);
   const { addLocation, popLocation } = useContext(LocationContext);
   const [activities, setActivities] = useState<ActivityProps[]>([]);
   const [selectedActivityIdx, setSelectedActivityIdx] = useState<number | null>(
@@ -77,12 +85,18 @@ export function Activities(): JSX.Element {
   );
 
   useEffect(() => {
-    getActivities().then((res) => {
-      setActivities(res);
-    });
-
     addLocation("Activities", true);
   }, []);
+
+  // useEffect on route change
+  useEffect(() => {
+    if (location.pathname === "/activities") {
+      setSelectedActivityIdx(null);
+      getActivities().then((res) => {
+        setActivities(res);
+      });
+    }
+  }, [location]);
 
   function onSelectActivity(index: number): void {
     if (selectedActivityIdx !== null) {
@@ -95,6 +109,29 @@ export function Activities(): JSX.Element {
   return (
     <ContainerStyled>
       <div className="sidebar">
+        <div style={{ paddingTop: 8 }} />
+        {user?.role === "ADMIN" &&
+          (location.pathname === "/activities/edit" ? (
+            <Link to="" style={{ backgroundColor: "gray" }}>
+              Edit
+            </Link>
+          ) : (
+            <Link to="edit">Edit</Link>
+          ))}
+        <div style={{ paddingTop: 8 }} />
+        {user?.role === "ADMIN" && (
+          <Link
+            to="add"
+            onClick={() => onSelectActivity(-1)}
+            style={
+              location.pathname === "/activities/add"
+                ? { backgroundColor: "gray" }
+                : {}
+            }
+          >
+            +
+          </Link>
+        )}
         <div style={{ paddingTop: 8 }} />
         {activities.map((_, index) => (
           <React.Fragment key={index}>
@@ -111,7 +148,9 @@ export function Activities(): JSX.Element {
         ))}
       </div>
       <div className="activity">
-        {selectedActivityIdx === null ? (
+        {selectedActivityIdx === null ||
+        (selectedActivityIdx === -1 &&
+          location.pathname !== "/activities/add") ? (
           <span
             style={{
               display: "flex",
@@ -135,11 +174,15 @@ export function Activities(): JSX.Element {
             <Route
               path="edit"
               element={
-                <EditActivity
+                <EditActivityLogic
                   key={selectedActivityIdx}
                   {...activities[selectedActivityIdx]}
                 />
               }
+            />
+            <Route
+              path="add"
+              element={<AddActivityLogic key={selectedActivityIdx} />}
             />
           </Routes>
         )}
@@ -160,11 +203,13 @@ const ContainerStyled = styled.div`
     align-items: center;
     padding: 0 8px;
 
-    button {
+    button,
+    a {
+      text-decoration: none;
+      color: black;
       outline: none;
       width: 100%;
       text-align: center;
-      padding: 10px;
       border: none;
       border-radius: 5px;
       font-size: 2rem;
@@ -181,7 +226,38 @@ const ContainerStyled = styled.div`
   }
 `;
 
-export function EditActivity(activity: ActivityProps): JSX.Element {
+function EditActivityLogic(activity: ActivityProps) {
+  function handleSave(newActivity: ActivityProps) {
+    updateActivity(newActivity).then((_) => {
+      alert("Activity updated successfully!");
+    });
+  }
+
+  return <EditActivity activity={activity} onSave={handleSave} />;
+}
+
+function AddActivityLogic() {
+  const activity = {
+    description: "",
+    params: [],
+    tests: [],
+  };
+  function handleSave(newActivity: ActivityProps) {
+    addActivity(newActivity).then((_) => {
+      alert("Activity created successfully!");
+    });
+  }
+
+  return <EditActivity activity={activity} onSave={handleSave} />;
+}
+
+export function EditActivity({
+  activity,
+  onSave,
+}: {
+  activity: ActivityProps;
+  onSave: (activity: ActivityProps) => void;
+}): JSX.Element {
   const [description, setDescription] = useState(activity.description);
   const [params, setParams] = useState<string[]>(activity.params);
   const [paramsEdit, setParamsEdit] = useState(activity.params.join(", "));
@@ -223,7 +299,13 @@ export function EditActivity(activity: ActivityProps): JSX.Element {
     setNewOutput("");
   }
 
-  function handleDeleteActivity() {}
+  function handleDeleteActivity() {
+    if (!activity.activityId) return;
+
+    deleteActivity(activity.activityId).then((_) => {
+      alert("Activity deleted successfully!");
+    });
+  }
 
   function handleSaveActivity() {
     const newTests = args.map((arg, index) => [
@@ -231,22 +313,26 @@ export function EditActivity(activity: ActivityProps): JSX.Element {
       JSON.parse(outputs[index] || "null"),
     ]) as [any[], any][];
 
-    updateActivity({
+    onSave({
       activityId: activity.activityId,
       description,
       params,
       tests: newTests,
-    }).then((res) => {
-      alert("Activity updated successfully!");
     });
   }
 
   return (
     <EditActivityContainerStyled>
       <div>
-        <h1>Activity {activity.activityId}</h1>
+        {activity.activityId ? (
+          <h1>Activity {activity.activityId}</h1>
+        ) : (
+          <h1>New Activity</h1>
+        )}
         <div style={{ display: "flex", marginBottom: 16 }}>
-          <button onClick={handleDeleteActivity}>Delete</button>
+          {activity.activityId && (
+            <button onClick={handleDeleteActivity}>Delete</button>
+          )}
           <button onClick={handleSaveActivity}>Save</button>
         </div>
         <div style={{ display: "flex", marginBottom: 16 }}>
@@ -382,7 +468,7 @@ const EditActivityContainerStyled = styled.div`
 `;
 
 interface ActivityProps {
-  activityId: number;
+  activityId?: number;
   description: string;
   params: string[];
   tests: Array<[any[], any]>;
