@@ -395,11 +395,13 @@ export const editActivity = asyncHandler(async (req, res) => {
   const { activityId } = req.params;
   const { description, params, tests }: ActivityProps = req.body;
 
+  const testsJSON = JSON.stringify(tests);
+
   await pool.query(
     `
     UPDATE courses.activity SET description = $1, params = $2, tests = $3 WHERE activity_id = $4;
   `,
-    [description, params, tests, activityId]
+    [description, params, testsJSON, activityId]
   );
 
   res.json({ message: "Activity edited" });
