@@ -204,10 +204,6 @@ export function EditActivity(activity: ActivityProps): JSX.Element {
   );
   const [newOutput, setNewOutput] = useState("");
 
-  useEffect(() => {
-    console.log({ params, args });
-  }, [params, args]);
-
   function updateArgs(index: number, paramName: string, value: string): void {
     const newArgs = args.map((a) => ({ ...a }));
     newArgs[index][paramName] = value;
@@ -527,9 +523,15 @@ export function Activity({
           </thead>
           <tbody>
             {tests.map((test, index) => (
-              <tr key={index}>
+              <tr key={index} onClick={() => setSelectedTestIdx(index)}>
                 {test[0].map((testItem, idx) => (
-                  <td key={idx} style={{ backgroundColor: "lightgray" }}>
+                  <td
+                    key={idx}
+                    style={{
+                      backgroundColor:
+                        selectedTestIdx === index ? "#ffd383" : "lightgray",
+                    }}
+                  >
                     <pre>{JSON.stringify(testItem, undefined, 2)}</pre>
                   </td>
                 ))}
