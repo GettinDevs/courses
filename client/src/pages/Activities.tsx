@@ -1,25 +1,32 @@
-import React, { useContext, useEffect, useState } from 'react'
-import styled from 'styled-components'
-import CodeMirror from '@uiw/react-codemirror'
-import { javascript } from '@codemirror/lang-javascript'
-import { LocationContext } from '../contexts/LocationContext'
+import React, { useContext, useEffect, useState } from "react";
+import styled from "styled-components";
+import CodeMirror from "@uiw/react-codemirror";
+import { javascript } from "@codemirror/lang-javascript";
+import { LocationContext } from "../contexts/LocationContext";
 
 const DEFAULT_FN = `\
 function task(#PARAMS) {
   // your code
 }
-`
+`;
 
-function createTask (code: string, params: string[]): {
-  valid: true
-  fn: Function
-} | {
-  valid: false
-  error: unknown
-} {
+function createTask(
+  code: string,
+  params: string[]
+):
+  | {
+      valid: true;
+      fn: Function;
+    }
+  | {
+      valid: false;
+      error: unknown;
+    } {
   try {
     // eslint-disable-next-line no-new-func, @typescript-eslint/no-implied-eval
-    const fn = new Function('args', `
+    const fn = new Function(
+      "args",
+      `
       try {
         ${code}
         return {
@@ -29,7 +36,10 @@ function createTask (code: string, params: string[]): {
       } catch(error) {
         let message = 'Execution failed. Recheck code.'
         if (error instanceof ReferenceError && error.message === 'task is not defined') {
-          message = \`Please, do not remove task function. Use template:\n\n${DEFAULT_FN.replace('#PARAMS', params.join(', '))}\`
+          message = \`Please, do not remove task function. Use template:\n\n${DEFAULT_FN.replace(
+            "#PARAMS",
+            params.join(", ")
+          )}\`
         }
         else if (error instanceof Error) {
           message = error.toString()
@@ -42,24 +52,27 @@ function createTask (code: string, params: string[]): {
           message
         }
       }
-    `)
+    `
+    );
 
     return {
       valid: true,
-      fn
-    }
+      fn,
+    };
   } catch (error) {
     return {
       valid: false,
-      error
-    }
+      error,
+    };
   }
 }
 
-export function Activities (): JSX.Element {
-  const { addLocation, popLocation } = useContext(LocationContext)
-  const [activities, setActivities] = useState<ActivityProps[]>([])
-  const [selectedActivityIdx, setSelectedActivityIdx] = useState<number | null>(null)
+export function Activities(): JSX.Element {
+  const { addLocation, popLocation } = useContext(LocationContext);
+  const [activities, setActivities] = useState<ActivityProps[]>([]);
+  const [selectedActivityIdx, setSelectedActivityIdx] = useState<number | null>(
+    null
+  );
 
   useEffect(() => {
     // getActivit`ies().then(res => {
@@ -68,34 +81,34 @@ export function Activities (): JSX.Element {
     setActivities([
       {
         id: 1,
-        description: 'do so',
-        params: ['firstValue', 'secondValue'],
+        description: "do so",
+        params: ["firstValue", "secondValue"],
         tests: [
           [[0, 20], 0],
           [[2, 30], 60],
-          [[5, 100], 500]
-        ]
+          [[5, 100], 500],
+        ],
       },
       {
         id: 2,
-        description: 'do so by two lolo',
-        params: ['firstValue', 'multiplier', 'exclusive'],
+        description: "do so by two lolo",
+        params: ["firstValue", "multiplier", "exclusive"],
         tests: [
           [[{ age: 23 }, 100], { age: 123 }],
-          [[{ age: 51 }, 120], { age: 171 }]
-        ]
-      }
-    ])
+          [[{ age: 51 }, 120], { age: 171 }],
+        ],
+      },
+    ]);
 
-    addLocation('Activities', true)
-  }, [])
+    addLocation("Activities", true);
+  }, []);
 
-  function onSelectActivity (index: number): void {
+  function onSelectActivity(index: number): void {
     if (selectedActivityIdx !== null) {
-      popLocation()
+      popLocation();
     }
-    addLocation(String(index + 1))
-    setSelectedActivityIdx(index)
+    addLocation(String(index + 1));
+    setSelectedActivityIdx(index);
   }
 
   return (
@@ -106,7 +119,9 @@ export function Activities (): JSX.Element {
           <React.Fragment key={index}>
             <button
               onClick={() => onSelectActivity(index)}
-              style={selectedActivityIdx === index ? { backgroundColor: 'gray' } : {}}
+              style={
+                selectedActivityIdx === index ? { backgroundColor: "gray" } : {}
+              }
             >
               {index + 1}
             </button>
@@ -115,18 +130,25 @@ export function Activities (): JSX.Element {
         ))}
       </div>
       <div className="activity">
-        {
-          selectedActivityIdx === null
-            ? (
-              <span style={{ display: 'flex', justifyContent: 'center', paddingTop: 200 }}>
-                Please, select an activity from the list on the sidebar.
-              </span>
-              )
-            : <Activity key={selectedActivityIdx} {...activities[selectedActivityIdx]} />
-        }
+        {selectedActivityIdx === null ? (
+          <span
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              paddingTop: 200,
+            }}
+          >
+            Please, select an activity from the list on the sidebar.
+          </span>
+        ) : (
+          <Activity
+            key={selectedActivityIdx}
+            {...activities[selectedActivityIdx]}
+          />
+        )}
       </div>
     </ContainerStyled>
-  )
+  );
 }
 
 const ContainerStyled = styled.div`
@@ -160,81 +182,95 @@ const ContainerStyled = styled.div`
   .activity {
     flex: 1;
   }
-`
+`;
 
 interface ActivityProps {
-  id: number
-  description: string
-  params: string[]
-  tests: Array<[any[], any]>
+  id: number;
+  description: string;
+  params: string[];
+  tests: Array<[any[], any]>;
 }
-export function Activity ({ description, params, tests }: ActivityProps): JSX.Element {
-  const [code, setCode] = useState(DEFAULT_FN.replace('#PARAMS', params.join(', ')))
-  const [results, setResults] = useState<any[]>(Array(tests.length).fill(undefined))
-  const [error, setError] = useState<string | null>(null)
-  const [showTests, setShowTests] = useState(true)
-  const [selectedTestIdx, setSelectedTestIdx] = useState(0)
-  const [output, setOutput] = useState<string | null>(null)
+export function Activity({
+  description,
+  params,
+  tests,
+}: ActivityProps): JSX.Element {
+  const [code, setCode] = useState(
+    DEFAULT_FN.replace("#PARAMS", params.join(", "))
+  );
+  const [results, setResults] = useState<any[]>(
+    Array(tests.length).fill(undefined)
+  );
+  const [error, setError] = useState<string | null>(null);
+  const [showTests, setShowTests] = useState(true);
+  const [selectedTestIdx, setSelectedTestIdx] = useState(0);
+  const [output, setOutput] = useState<string | null>(null);
 
-  function onChange (value: string): void {
-    setCode(value)
+  function onChange(value: string): void {
+    setCode(value);
   }
 
-  function getFn (): Function | null {
-    setResults([])
-    setError(null)
-    setOutput(null)
+  function getFn(): Function | null {
+    setResults([]);
+    setError(null);
+    setOutput(null);
 
-    const task = createTask(code, params)
+    const task = createTask(code, params);
     if (!task.valid) {
-      setError(task.error instanceof Error ? task.error.toString() : 'Invalid code')
-      return null
+      setError(
+        task.error instanceof Error ? task.error.toString() : "Invalid code"
+      );
+      return null;
     }
 
-    return task.fn
+    return task.fn;
   }
 
-  function onRunCode (): void {
-    const fn = getFn()
-    if (fn === null) return
+  function onRunCode(): void {
+    const fn = getFn();
+    if (fn === null) return;
 
-    const executedTask = fn(tests[selectedTestIdx][0]) as {
-      success: true
-      value: any
-    } | {
-      success: false
-      message: string
-    }
+    const executedTask = fn(tests[selectedTestIdx][0]) as
+      | {
+          success: true;
+          value: any;
+        }
+      | {
+          success: false;
+          message: string;
+        };
 
     if (executedTask.success) {
-      setOutput(executedTask.value)
+      setOutput(executedTask.value);
     } else {
-      setOutput(null)
-      setError(executedTask.message)
+      setOutput(null);
+      setError(executedTask.message);
     }
   }
 
-  function onRunTests () {
-    const fn = getFn()
-    if (fn === null) return
+  function onRunTests() {
+    const fn = getFn();
+    if (fn === null) return;
 
-    tests.forEach(test => {
-      const testInput = test[0]
-      const executedTask = fn(testInput) as {
-        success: true
-        value: any
-      } | {
-        success: false
-        message: string
-      }
+    tests.forEach((test) => {
+      const testInput = test[0];
+      const executedTask = fn(testInput) as
+        | {
+            success: true;
+            value: any;
+          }
+        | {
+            success: false;
+            message: string;
+          };
 
       if (executedTask.success) {
-        setResults(prev => [...prev, executedTask.value])
+        setResults((prev) => [...prev, executedTask.value]);
       } else {
-        setResults(prev => [...prev, null])
-        setError(executedTask.message)
+        setResults((prev) => [...prev, null]);
+        setError(executedTask.message);
       }
-    })
+    });
   }
 
   return (
@@ -245,23 +281,23 @@ export function Activity ({ description, params, tests }: ActivityProps): JSX.El
           value={code}
           height="500px"
           theme="dark"
-          style={{ fontSize: '1rem' }}
+          style={{ fontSize: "1rem" }}
           extensions={[javascript()]}
           onChange={onChange}
         />
         <div className="actions">
           <button onClick={onRunCode}>Run Code</button>
           <button onClick={onRunTests}>Run Tests</button>
-          <button onClick={() => setShowTests(v => !v)}>{showTests ? 'Hide tests' : 'Show tests'}</button>
+          <button onClick={() => setShowTests((v) => !v)}>
+            {showTests ? "Hide tests" : "Show tests"}
+          </button>
         </div>
-        <span style={{ paddingTop: '1rem', fontWeight: 'bold' }}>Output from running the code:</span>
-        {output !== null && (
-          <pre>
-            {JSON.stringify(output, undefined, 2)}
-          </pre>
-        )}
+        <span style={{ paddingTop: "1rem", fontWeight: "bold" }}>
+          Output from running the code:
+        </span>
+        {output !== null && <pre>{JSON.stringify(output, undefined, 2)}</pre>}
         {error !== null && (
-          <div style={{ color: 'red', fontWeight: 'bold' }}>
+          <div style={{ color: "red", fontWeight: "bold" }}>
             <pre>{error}</pre>
           </div>
         )}
@@ -270,12 +306,11 @@ export function Activity ({ description, params, tests }: ActivityProps): JSX.El
         <table>
           <thead>
             <tr>
+              <th>Input</th>
+              <th>Expected Output</th>
 
-                           <th>Input</th>
-                <th>Expected Output</th>
-
-                  <th>Received Output</th>
-                  <th>Success</th>
+              <th>Received Output</th>
+              <th>Success</th>
             </tr>
           </thead>
           <tbody>
@@ -285,31 +320,48 @@ export function Activity ({ description, params, tests }: ActivityProps): JSX.El
                   <table>
                     <tbody>
                       {test[0].map((testItem, idx) => (
-                        <tr key={idx} style={selectedTestIdx === index ? { color: 'darkorange', fontWeight: 'bold' } : {}}>
+                        <tr
+                          key={idx}
+                          style={
+                            selectedTestIdx === index
+                              ? { color: "darkorange", fontWeight: "bold" }
+                              : {}
+                          }
+                        >
                           <td>{params[idx]}</td>
                           <td>
-                            <pre>
-                              {JSON.stringify(testItem, undefined, 2)}
-                            </pre>
+                            <pre>{JSON.stringify(testItem, undefined, 2)}</pre>
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </td>
-                <td><pre>{JSON.stringify(test[1], undefined, 2)}</pre></td>
-                <td><pre>{JSON.stringify(results[index], undefined, 2)}</pre></td>
-                <td style={{
-                  color: JSON.stringify(test[1]) === JSON.stringify(results[index]) ? 'green' : 'red'
-                }}>{JSON.stringify(test[1]) === JSON.stringify(results[index]) ? 'SUCCESSED' : 'FAILED'}</td>
+                <td>
+                  <pre>{JSON.stringify(test[1], undefined, 2)}</pre>
+                </td>
+                <td>
+                  <pre>{JSON.stringify(results[index], undefined, 2)}</pre>
+                </td>
+                <td
+                  style={{
+                    color:
+                      JSON.stringify(test[1]) === JSON.stringify(results[index])
+                        ? "green"
+                        : "red",
+                  }}
+                >
+                  {JSON.stringify(test[1]) === JSON.stringify(results[index])
+                    ? "SUCCESSED"
+                    : "FAILED"}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-
-          </ActivitiesOverviewContainer>
-  )
+    </ActivitiesOverviewContainer>
+  );
 }
 
 const ActivitiesOverviewContainer = styled.div`
@@ -344,12 +396,15 @@ const ActivitiesOverviewContainer = styled.div`
     flex: 3;
     padding-left: 20px;
 
-    table, th, td {
+    table,
+    th,
+    td {
       border: 1px solid;
     }
 
-    th, td {
+    th,
+    td {
       padding: 0 8px;
     }
   }
-`
+`;
