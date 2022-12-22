@@ -362,7 +362,7 @@ export const addActivity = asyncHandler(async (req, res) => {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS courses.activity (
       activity_id SERIAL PRIMARY KEY,
-      description VARCHAR(255) NOT NULL,
+      description TEXT NOT NULL,
       params VARCHAR(30)[] NOT NULL,
       tests JSONB NOT NULL
     );
@@ -388,7 +388,10 @@ export const getActivities = asyncHandler(async (_req, res) => {
     FROM courses.activity a;
   `);
 
-  res.json(rows);
+  // get activities sorted by id
+  const sortedRows = rows.sort((a, b) => a.activityId - b.activityId);
+
+  res.json(sortedRows);
 });
 
 export const editActivity = asyncHandler(async (req, res) => {
