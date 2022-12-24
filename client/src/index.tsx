@@ -1,18 +1,18 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import { QueryClient, QueryClientProvider } from 'react-query'
-import {
-  createBrowserRouter,
-  RouterProvider
-} from "react-router-dom";
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { QueryClient, QueryClientProvider } from "react-query";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
-import './index.css';
-import { App } from './pages/App';
-import { Dashboard } from './pages/Dashboard';
-import { UserProvider } from './contexts/UserContext';
-import { LocationProvider } from './contexts/LocationContext';
+import "./index.css";
+import { App } from "./pages/App";
+import { Dashboard } from "./pages/Dashboard";
+import { Activities } from "./pages/Activities";
+import { UserProvider } from "./contexts/UserContext";
+import { LocationProvider } from "./contexts/LocationContext";
 
-const queryClient = new QueryClient()
+import { MainLayout } from "./pages/App";
+
+const queryClient = new QueryClient();
 
 const router = createBrowserRouter([
   {
@@ -23,12 +23,21 @@ const router = createBrowserRouter([
   {
     path: "/dashboard",
     element: <Dashboard />,
-    errorElement: <div>404</div>
+    errorElement: <div>404</div>,
+  },
+  {
+    path: "/activities/*",
+    element: (
+      <MainLayout>
+        <Activities />
+      </MainLayout>
+    ),
+    errorElement: <div>404</div>,
   },
 ]);
 
 const root = ReactDOM.createRoot(
-  document.getElementById('root') as HTMLElement
+  document.getElementById("root") as HTMLElement
 );
 root.render(
   <React.StrictMode>

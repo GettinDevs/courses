@@ -1,11 +1,13 @@
 FROM node:alpine as BUILDER
 WORKDIR /app
 
-COPY package.json yarn.lock tsconfig.json .
-RUN yarn install
+# COPY package.json yarn.lock tsconfig.json .
+# RUN yarn install
 
-COPY . .
-RUN yarn build
+# COPY . .
+# RUN yarn build
+
+COPY ./build ./build
 
 FROM nginx
 EXPOSE 3000

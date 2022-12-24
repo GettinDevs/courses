@@ -65,9 +65,10 @@ export function Dashboard() {
               <SidebarItemStyled onClick={() => setActiveSessionId(null)}>[{course.courseId}] {course.title}</SidebarItemStyled>
               <div style={{ paddingLeft: '30px' }}>
                 {
-                  course.sessions.map((session) => (
+                  course.sessions.map((session, index) => (
                     <SidebarItemStyled key={session.sessionId} onClick={() => setActiveSessionId(session.sessionId)}>
                       <span>[{session.sessionId}]&nbsp;</span>
+                      <span>[{index}]&nbsp;</span>
                       <b>{session.type === 'LECTURE' ? session.count : session.type.toUpperCase()}:&nbsp;</b>
                       {session.title}
                     </SidebarItemStyled>
@@ -135,6 +136,7 @@ const ContainerStyled = styled.div`
     padding: 1rem;
     border-right: 1px solid lightgray;
     overflow-y: auto;
+    min-width: 200px;
 
     .section-separator {
       width: 100%;
@@ -333,7 +335,9 @@ export function Input({ label, value, type, allowNull, onSave }: InputProps) {
           type === 'boolean' ? <input type="checkbox" checked={Boolean(inputValue)} onChange={(e) => setInputValue(Boolean(e.target.checked))} /> :
             type === 'number' ? <input type="number" value={Number(inputValue)} onChange={(e) => setInputValue(Number(e.target.value))} /> :
               type === 'text' ? <input type="text" value={String(inputValue)} onChange={(e) => setInputValue(String(e.target.value))} /> :
-                type === 'markdown' ? <MarkdownEditor style={{ minHeight: '500px' }} value={String(inputValue)} onChange={(newValue, _viewUpdate) => setInputValue(newValue)} /> :
+                type === 'markdown' ? <>
+                  <MarkdownEditor className='editor' maxWidth='1000px' value={String(inputValue)} onChange={(newValue, _viewUpdate) => setInputValue(newValue)} />
+                </> :
                   <span>Unknown type</span>
         }
         {
@@ -359,5 +363,12 @@ export function Input({ label, value, type, allowNull, onSave }: InputProps) {
 const LabelStyled = styled.div`
   display: flex;
   font-size: 1.2rem;
-  padding: 8px 0;  
+  padding: 8px 0;
+
+  .editor {
+    .cm-line {
+      white-space: pre-wrap;
+      max-width: 950px;
+    }
+  }
 `

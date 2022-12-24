@@ -1,55 +1,55 @@
-import type { Request, Response } from 'express';
-import { pool } from '../db/pool';
-import { asyncHandler } from '../utils/asyncHandlers'
-import { config } from '../config'
+import type { Request, Response } from "express";
+import { pool } from "../db/pool";
+import { asyncHandler } from "../utils/asyncHandlers";
+import { config } from "../config";
 
-const ADMIN_USER = 'tomas'
-const ADMIN_PASSWORD = config.app.adminPassword
+const ADMIN_USER = "tomas";
+const ADMIN_PASSWORD = config.app.adminPassword;
 
 export const login = asyncHandler(async (req, res) => {
-  const { username, password } = req.body
+  const { username, password } = req.body;
 
   if (username === ADMIN_USER) {
     if (password !== ADMIN_PASSWORD) {
       res.status(401).json({
-        message: 'Invalid password',
-      })
-      return
+        message: "Invalid password",
+      });
+      return;
     }
   }
 
   const { rows } = await pool.query(
-    'SELECT * FROM courses.app_user WHERE username = $1',
+    "SELECT * FROM courses.app_user WHERE username = $1",
     [username]
-  )
+  );
   if (rows.length === 0) {
     res.status(401).json({
-      message: 'Invalid username',
-    })
-    return
+      message: "Invalid username",
+    });
+    return;
   }
-  const user = rows[0]
+  const user = rows[0];
 
   res.json({
     userId: user.user_id,
     username: user.username,
-    role: user.user_role
-  })
-})
+    role: user.user_role,
+  });
+});
 
 export const getUserNotifications = asyncHandler(async (req, res) => {
-  const { userId } = req.params
+  const { userId } = req.params;
 
   const { rows } = await pool.query(
-    'SELECT * FROM courses.notification WHERE user_id = $1',
+    "SELECT * FROM courses.notification WHERE user_id = $1",
     [userId]
-  )
+  );
 
-  res.json(rows)
-})
+  res.json(rows);
+});
 
 export const getUserEnrollments = asyncHandler(async (req, res) => {
-  const { userId } = req.params
+  const { userId } = req.params;
 
   const { rows } = await pool.query(
     `SELECT
@@ -85,13 +85,13 @@ export const getUserEnrollments = asyncHandler(async (req, res) => {
     ) c ON e.course_id = c.course_id
     WHERE e.user_id = $1`,
     [userId]
-  )
+  );
 
-  res.json(rows)
-})
+  res.json(rows);
+});
 
 export const getUserEnrollment = asyncHandler(async (req, res) => {
-  const { userId, enrollmentId } = req.params
+  const { userId, enrollmentId } = req.params;
 
   const { rows: enrollments } = await pool.query(
     `SELECT *
@@ -118,15 +118,15 @@ export const getUserEnrollment = asyncHandler(async (req, res) => {
     ) c ON e.course_id = c.course_id
     WHERE e.user_id = $1 AND e.enrollment_id = $2`,
     [userId, enrollmentId]
-  )
+  );
 
-  const enrollment = enrollments[0]
+  const enrollment = enrollments[0];
 
-  res.json(enrollment)
-})
+  res.json(enrollment);
+});
 
 export const getCourse = asyncHandler(async (req, res) => {
-  const { courseId } = req.params
+  const { courseId } = req.params;
 
   const { rows: courses } = await pool.query(
     `SELECT 
@@ -149,16 +149,17 @@ export const getCourse = asyncHandler(async (req, res) => {
     FROM courses.course c
     WHERE c.course_id = $1`,
     [courseId]
-  )
-  const course = courses[0]
+  );
+  const course = courses[0];
 
-  res.json(course)
-})
+  res.json(course);
+});
 
 export const getSession = asyncHandler(async (req, res) => {
-  const { sessionId } = req.params
+  const { sessionId } = req.params;
 
-  const { rows: sessions } = await pool.query(`
+  const { rows: sessions } = await pool.query(
+    `
     SELECT
       s.session_id as "sessionId",
       s.title,
@@ -168,14 +169,15 @@ export const getSession = asyncHandler(async (req, res) => {
       s.course_id as "courseId",
       s.content
     FROM courses.session s WHERE s.session_id = $1
-  `, [sessionId])
+  `,
+    [sessionId]
+  );
 
-  const session = sessions[0]
-  res.json(session)
-})
+  const session = sessions[0];
+  res.json(session);
+});
 
 export const getCourses = asyncHandler(async (_req, res) => {
-
   // Fetch all courses without populating
   // the sessions array
   const { rows: courses } = await pool.query(`
@@ -184,7 +186,7 @@ export const getCourses = asyncHandler(async (_req, res) => {
       c.title,
       c.depends_on as "dependsOn"
     FROM courses.course c
-  `)
+  `);
 
   // Fetch all sessions
   const { rows: sessions } = await pool.query(`
@@ -197,29 +199,31 @@ export const getCourses = asyncHandler(async (_req, res) => {
       s.course_id as "courseId",
       s.content
     FROM courses.session s
-  `)
+  `);
 
-  const coursesWithSessions = courses.map(course => {
+  const coursesWithSessions = courses.map((course) => {
     const courseSessions = sessions
-      .filter(session => session.courseId === course.courseId)
-      .sort((a, b) => a.rank - b.rank)
+      .filter((session) => session.courseId === course.courseId)
+      .sort((a, b) => a.rank - b.rank);
 
     return {
       ...course,
-      sessions: courseSessions
-    }
-  })
+      sessions: courseSessions,
+    };
+  });
 
-  const sessionsWithoutCourse = sessions.find(session => {
-    return !coursesWithSessions.find(course => course.courseId === session.courseId)
-  }) || []
+  const sessionsWithoutCourse =
+    sessions.find((session) => {
+      return !coursesWithSessions.find(
+        (course) => course.courseId === session.courseId
+      );
+    }) || [];
 
   res.json({
     courses: coursesWithSessions,
-    sessionsWithoutCourse
-  })
-})
-
+    sessionsWithoutCourse,
+  });
+});
 
 export function authMiddleware(_req: Request, _res: Response) {
   return;
@@ -233,86 +237,188 @@ export function authMiddleware(_req: Request, _res: Response) {
 }
 
 export const addCourse = asyncHandler(async (req, res) => {
-  authMiddleware(req, res)
+  authMiddleware(req, res);
 
-  const { title, dependsOn } = req.body
+  const { title, dependsOn } = req.body;
 
   const { rows } = await pool.query(
     `INSERT INTO courses.course (title, depends_on) VALUES ($1, $2) RETURNING course_id as "courseId"`,
     [title, dependsOn]
-  )
+  );
 
-  res.json(rows[0])
-})
+  res.json(rows[0]);
+});
 
 export const addSession = asyncHandler(async (req, res) => {
-  authMiddleware(req, res)
+  authMiddleware(req, res);
 
-  const { courseId, title, type, isMandatory, rank, content } = req.body
+  const { courseId, title, type, isMandatory, rank, content } = req.body;
 
   const { rows } = await pool.query(
     `INSERT INTO courses.session (course_id, title, session_type, is_mandatory, rank, content) VALUES ($1, $2, $3, $4, $5, $6) RETURNING session_id as "sessionId"`,
     [courseId, title, type, isMandatory, rank, content]
-  )
+  );
 
-  res.json(rows[0])
-})
+  res.json(rows[0]);
+});
 
 export const updateCourse = asyncHandler(async (req, res) => {
-  authMiddleware(req, res)
+  authMiddleware(req, res);
 
-  const { courseId } = req.params
-  const { title, dependsOn } = req.body
+  const { courseId } = req.params;
+  const { title, dependsOn } = req.body;
 
   await pool.query(
     `UPDATE courses.course SET title = $1, depends_on = $2 WHERE course_id = $3`,
     [title, dependsOn, courseId]
-  )
+  );
 
-  res.json({ message: 'Course updated' })
-})
+  res.json({ message: "Course updated" });
+});
 
 export const updateSession = asyncHandler(async (req, res) => {
-  authMiddleware(req, res)
+  authMiddleware(req, res);
 
-  const { sessionId } = req.params
-  const { title, type, isMandatory, rank, content } = req.body
+  const { sessionId } = req.params;
+  const { title, type, isMandatory, rank, content } = req.body;
 
   await pool.query(
     `UPDATE courses.session SET title = $1, session_type = $2, is_mandatory = $3, rank = $4, content = $5 WHERE session_id = $6`,
     [title, type, isMandatory, rank, content, sessionId]
-  )
+  );
 
-  res.json({ message: 'Session updated' })
-})
+  res.json({ message: "Session updated" });
+});
 
 export const deleteCourse = asyncHandler(async (req, res) => {
-  authMiddleware(req, res)
+  authMiddleware(req, res);
 
-  const { courseId } = req.params
+  const { courseId } = req.params;
 
   await pool.query(
     `UPDATE courses.course SET depends_on = NULL WHERE depends_on = $1`,
     [courseId]
-  )
+  );
 
-  await pool.query(
-    `DELETE FROM courses.course WHERE course_id = $1`,
-    [courseId]
-  )
+  await pool.query(`DELETE FROM courses.course WHERE course_id = $1`, [
+    courseId,
+  ]);
 
-  res.json({ message: 'Course deleted' })
-})
+  res.json({ message: "Course deleted" });
+});
 
 export const deleteSession = asyncHandler(async (req, res) => {
-  authMiddleware(req, res)
+  authMiddleware(req, res);
 
-  const { sessionId } = req.params
+  const { sessionId } = req.params;
+
+  await pool.query(`DELETE FROM courses.session WHERE session_id = $1`, [
+    sessionId,
+  ]);
+
+  res.json({ message: "Session deleted" });
+});
+
+export const completeSession = asyncHandler(async (req, res) => {
+  const { sessionId } = req.params;
+  const { userId } = req.body;
 
   await pool.query(
-    `DELETE FROM courses.session WHERE session_id = $1`,
-    [sessionId]
-  )
+    `UPDATE courses.session_progress SET is_completed = true, progress_status = 'COMPLETED' WHERE session_id = $1 AND user_id = $2`,
+    [sessionId, userId]
+  );
 
-  res.json({ message: 'Session deleted' })
-})
+  res.json({ message: "Session completed" });
+});
+
+export const uncompleteSession = asyncHandler(async (req, res) => {
+  const { sessionId } = req.params;
+  const { userId } = req.body;
+
+  await pool.query(
+    `UPDATE courses.session_progress SET is_completed = false, progress_status = 'NOT_STARTED' WHERE session_id = $1 AND user_id = $2`,
+    [sessionId, userId]
+  );
+
+  res.json({ message: "Session uncompleted" });
+});
+
+type ActivityProps = {
+  description: string;
+  params: string[];
+  tests: [any[], any][];
+};
+
+export const addActivity = asyncHandler(async (req, res) => {
+  const { description, params, tests }: ActivityProps = req.body;
+  // const testsForDB: ActivityPosgres["tests"] = tests.map(
+  //   ([args, expected]) => ({ args, expected })
+  // );
+
+  // pass "tests" to json
+  const testsJSON = JSON.stringify(tests);
+
+  // Create activity table in DB posgres
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS courses.activity (
+      activity_id SERIAL PRIMARY KEY,
+      description TEXT NOT NULL,
+      params VARCHAR(30)[] NOT NULL,
+      tests JSONB NOT NULL
+    );
+  `);
+
+  const { rows } = await pool.query(
+    `
+    INSERT INTO courses.activity (description, params, tests) VALUES ($1, $2, $3) RETURNING activity_id as "activityId";
+  `,
+    [description, params, testsJSON]
+  );
+
+  res.json({ message: "Activity added", activityId: rows[0].activityId });
+});
+
+export const getActivities = asyncHandler(async (_req, res) => {
+  const { rows } = await pool.query(`
+    SELECT
+      a.activity_id as "activityId",
+      a.description,
+      a.params,
+      a.tests
+    FROM courses.activity a;
+  `);
+
+  // get activities sorted by id
+  const sortedRows = rows.sort((a, b) => a.activityId - b.activityId);
+
+  res.json(sortedRows);
+});
+
+export const editActivity = asyncHandler(async (req, res) => {
+  const { activityId } = req.params;
+  const { description, params, tests }: ActivityProps = req.body;
+
+  const testsJSON = JSON.stringify(tests);
+
+  await pool.query(
+    `
+    UPDATE courses.activity SET description = $1, params = $2, tests = $3 WHERE activity_id = $4;
+  `,
+    [description, params, testsJSON, activityId]
+  );
+
+  res.json({ message: "Activity edited" });
+});
+
+export const deleteActivity = asyncHandler(async (req, res) => {
+  const { activityId } = req.params;
+
+  await pool.query(
+    `
+    DELETE FROM courses.activity WHERE activity_id = $1;
+  `,
+    [activityId]
+  );
+
+  res.json({ message: "Activity deleted" });
+});

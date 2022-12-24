@@ -3,9 +3,10 @@ import React, { useState, useEffect, createContext } from "react";
 
 type ContextProps = {
   locations: string[];
-  addLocation: (location: string) => void;
+  addLocation: (location: string, empty?: boolean) => void;
   removeLocationAt: (index: number) => void;
   popLocation: () => void;
+  emptyLocation: () => void;
 }
 
 export const LocationContext = createContext<ContextProps>({} as ContextProps);
@@ -13,9 +14,9 @@ export const LocationContext = createContext<ContextProps>({} as ContextProps);
 export const LocationProvider = ({ children }: { children: React.ReactNode }) => {
   const [locations, setLocations] = useState<string[]>([]);
 
-  function addLocation(location: string) {
+  function addLocation(location: string, empty = false) {
     setLocations(prevLocations => {
-      const locationsSet = new Set(prevLocations);
+      const locationsSet = new Set(empty ? [] : prevLocations);
       locationsSet.add(location);
       return Array.from(locationsSet);
     });
@@ -29,8 +30,12 @@ export const LocationProvider = ({ children }: { children: React.ReactNode }) =>
     setLocations(prev => prev.slice(0, -1));
   }
 
+  function emptyLocation() {
+    setLocations([]);
+  }
+
   return (
-    <LocationContext.Provider value={{ locations, addLocation, removeLocationAt, popLocation }}>
+    <LocationContext.Provider value={{ locations, addLocation, removeLocationAt, popLocation, emptyLocation }}>
       {children}
     </LocationContext.Provider>
   );

@@ -8,8 +8,10 @@
 	"customizations": {
 		"vscode": {
 			"extensions": [
-				"github.copilot"
-			]
+				"github.copilot",
+				"rangav.vscode-thunder-client"
+			],
+			"settings": { }
 		}
 	}
 	// Features to add to the dev container. More info: https://containers.dev/features.

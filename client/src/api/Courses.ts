@@ -11,3 +11,5 @@ export const updateCourseById = (courseId: number, course: Course) => put(`/cour
 export const updateSessionById = (sessionId: number, session: SessionWithContent) => put(`/sessions/${sessionId}`, { ...session, user })
 export const deleteCourseById = (courseId: number) => del(`/courses/${courseId}`)
 export const deleteSessionById = (sessionId: number) => del(`/sessions/${sessionId}`)
+export const completeSession = (sessionId: number) => post(`/sessions/${sessionId}/complete`, { ...user })
+export const uncompleteSession = (sessionId: number) => post(`/sessions/${sessionId}/uncomplete`, { ...user })
